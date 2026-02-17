@@ -45,43 +45,130 @@ function shortAddr(addr: string) {
   return addr.slice(0, 8) + "..." + addr.slice(-6);
 }
 
+// ── SVG Logos ──
+const GoogleLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
+
+const TelegramLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="12" fill="#229ED9"/>
+    <path d="M17.5 7L5.5 11.5l3.5 1.5 1.5 4.5 2-2.5 3.5 2.5 2-10z" fill="white" opacity="0.9"/>
+    <path d="M9 13l-.5 3.5 2-2.5" fill="white" opacity="0.7"/>
+  </svg>
+);
+
+const XLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
+const MetaMaskLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 35 33" fill="none">
+    <path d="M32.9582 1L19.8241 10.7183L22.2665 4.99099L32.9582 1Z" fill="#E17726" stroke="#E17726" strokeWidth="0.25"/>
+    <path d="M2.04858 1L15.0707 10.809L12.7423 4.99098L2.04858 1Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M28.2295 23.5335L24.7443 28.872L32.2133 30.9312L34.3616 23.6501L28.2295 23.5335Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M0.647644 23.6501L2.78442 30.9312L10.2534 28.872L6.77972 23.5335L0.647644 23.6501Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M9.85487 14.5149L7.7666 17.6507L15.1583 17.9957L14.9018 10.0196L9.85487 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M25.1539 14.5149L20.0239 9.92798L19.8241 17.9957L27.2158 17.6507L25.1539 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M10.2534 28.872L14.7018 26.6965L10.8583 23.7001L10.2534 28.872Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+    <path d="M20.3069 26.6965L24.7443 28.872L24.1504 23.7001L20.3069 26.6965Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25"/>
+  </svg>
+);
+
+const MoneroLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 50 50" fill="none">
+    <circle cx="25" cy="25" r="25" fill="#FF6600"/>
+    <path d="M25 10C16.716 10 10 16.716 10 25v8.333h5V25c0-5.523 4.477-10 10-10s10 4.477 10 10v8.333h5V25C40 16.716 33.284 10 25 10z" fill="white"/>
+    <path d="M13 25v13.333h5V25h-5zM32 25v13.333h5V25h-5zM20 19.167V38.333h10V19.167L25 14.167l-5 5z" fill="white"/>
+  </svg>
+);
+
+const CtrlWalletLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 100 100" fill="none">
+    <rect width="100" height="100" rx="20" fill="#1a1a2e"/>
+    <path d="M25 50C25 36.193 36.193 25 50 25s25 11.193 25 25-11.193 25-25 25S25 63.807 25 50z" fill="#7B2FBE"/>
+    <path d="M40 50l8 8 16-16" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const LaceLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 100 100" fill="none">
+    <rect width="100" height="100" rx="20" fill="#0D0D0D"/>
+    <path d="M50 15L80 70H20L50 15Z" fill="#00E8C6"/>
+    <path d="M50 35L65 60H35L50 35Z" fill="#0D0D0D"/>
+  </svg>
+);
+
+const FeatherLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 100 100" fill="none">
+    <rect width="100" height="100" rx="20" fill="#1B4F72"/>
+    <path d="M70 20C70 20 40 30 30 60C40 50 55 48 65 52C55 58 45 70 40 80C50 70 75 45 70 20Z" fill="white"/>
+    <line x1="30" y1="60" x2="55" y2="55" stroke="white" strokeWidth="3"/>
+  </svg>
+);
+
+const CakeLogo = () => (
+  <svg width="20" height="20" viewBox="0 0 100 100" fill="none">
+    <rect width="100" height="100" rx="20" fill="#EF4444"/>
+    <rect x="20" y="55" width="60" height="25" rx="5" fill="white"/>
+    <rect x="30" y="40" width="40" height="20" rx="5" fill="white" opacity="0.8"/>
+    <rect x="40" y="28" width="20" height="16" rx="5" fill="white" opacity="0.6"/>
+    <circle cx="50" cy="24" r="4" fill="#FCD34D"/>
+  </svg>
+);
+
 const WALLET_CONFIGS = [
   {
     chain: "night" as Chain,
     label: "Midnight (NIGHT)",
     sub: "Privacy chain · ZK-powered",
-    icon: "🌙",
     iconBg: "rgba(160,100,255,.15)",
+    iconText: "🌙",
     placeholder: "mn1...",
-    options: ["Ctrl Wallet", "Lace Wallet"],
+    options: [
+      { name: "Ctrl Wallet", Logo: CtrlWalletLogo },
+      { name: "Lace Wallet", Logo: LaceLogo },
+    ],
     real: false,
   },
   {
     chain: "eth" as Chain,
     label: "Ethereum",
     sub: "EVM-compatible · ERC-1155 NFTs",
-    icon: "⟠",
     iconBg: "rgba(98,126,234,.15)",
+    iconText: "⟠",
     placeholder: "0x...",
-    options: ["MetaMask"],
+    options: [
+      { name: "MetaMask", Logo: MetaMaskLogo },
+    ],
     real: true,
   },
   {
     chain: "xmr" as Chain,
     label: "Monero (XMR)",
     sub: "Privacy coin · Untraceable",
-    icon: "ɱ",
     iconBg: "rgba(255,102,0,.15)",
+    iconText: "ɱ",
     placeholder: "4...",
-    options: ["Feather Wallet", "Cake Wallet"],
+    options: [
+      { name: "Feather Wallet", Logo: FeatherLogo },
+      { name: "Cake Wallet", Logo: CakeLogo },
+    ],
     real: false,
   },
 ];
 
 const SOCIAL_OPTIONS = [
-  { key: "google", label: "Google", icon: "🔵" },
-  { key: "telegram", label: "Telegram", icon: "✈️" },
-  { key: "x", label: "X", icon: "🐦" },
+  { key: "google", label: "Google", Logo: GoogleLogo },
+  { key: "telegram", label: "Telegram", Logo: TelegramLogo },
+  { key: "x", label: "X", Logo: XLogo },
 ];
 
 export default function LoginPage() {
@@ -97,10 +184,10 @@ export default function LoginPage() {
     setTimeout(() => setToast(null), 2800);
   }
 
-  function socialLogin(name: string, icon: string, key: string) {
+  function socialLogin(name: string, key: string) {
     setSocialLoading(key);
     setTimeout(() => {
-      setSocial({ name, handle: rand(FAKE_NAMES[key]), icon });
+      setSocial({ name, handle: rand(FAKE_NAMES[key]), icon: key });
       setSocialLoading(null);
       showToast("Signed in with " + name);
     }, 1200);
@@ -119,8 +206,7 @@ export default function LoginPage() {
     try {
       setWalletLoading("eth");
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
-      const address = accounts[0];
-      setWallets((prev) => ({ ...prev, eth: address }));
+      setWallets((prev) => ({ ...prev, eth: accounts[0] }));
       showToast("MetaMask connected successfully");
     } catch {
       showToast("MetaMask connection cancelled");
@@ -130,11 +216,7 @@ export default function LoginPage() {
   }
 
   function connectWallet(chain: Chain, walletName: string) {
-    const fakeAddrs: Record<Chain, string[]> = {
-      eth: [],
-      night: FAKE_NIGHT,
-      xmr: FAKE_XMR,
-    };
+    const fakeAddrs: Record<Chain, string[]> = { eth: [], night: FAKE_NIGHT, xmr: FAKE_XMR };
     setWalletLoading(chain);
     setTimeout(() => {
       setWallets((prev) => ({ ...prev, [chain]: rand(fakeAddrs[chain]) }));
@@ -170,8 +252,6 @@ export default function LoginPage() {
     return "Choose at least one option above to continue.";
   }
 
-  const c: React.CSSProperties = { fontFamily: "'Outfit', sans-serif" };
-
   const SUMMARY_ROWS = [
     { label: "Social Login", value: social?.handle ?? null },
     { label: "Midnight Address", value: wallets.night },
@@ -180,7 +260,7 @@ export default function LoginPage() {
   ];
 
   return (
-    <main style={{ ...c, background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+    <main style={{ background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
 
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 4, textTransform: "uppercase", opacity: .5, marginBottom: 14 }}>Fitnight</div>
@@ -192,6 +272,7 @@ export default function LoginPage() {
 
       <div style={{ width: "100%", maxWidth: 760, display: "flex", flexDirection: "column", gap: 16 }}>
 
+        {/* Option 1 – Social */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
         <div style={{ background: "#0d0d0d", border: social ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "24px 28px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -211,41 +292,45 @@ export default function LoginPage() {
           {social ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>{social.icon}</div>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {social.icon === "google" ? <GoogleLogo /> : social.icon === "telegram" ? <TelegramLogo /> : <XLogo />}
+                </div>
                 <div>
                   <div style={{ fontWeight: 600 }}>{social.handle}</div>
                   <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>via {social.name}</div>
                 </div>
               </div>
-              <button onClick={socialLogout} style={{ ...c, background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+              <button onClick={socialLogout} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
                 Sign out
               </button>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-              {SOCIAL_OPTIONS.map((opt) => (
-                <button key={opt.key} onClick={() => socialLogin(opt.label, opt.icon, opt.key)}
-                  style={{ ...c, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "16px 12px", borderRadius: 12, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                  <span style={{ fontSize: 24 }}>{opt.icon}</span>
-                  {socialLoading === opt.key ? "Connecting..." : opt.label}
+              {SOCIAL_OPTIONS.map(({ key, label, Logo }) => (
+                <button key={key} onClick={() => socialLogin(label, key)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "18px 12px", borderRadius: 12, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
+                  <Logo />
+                  {socialLoading === key ? "Connecting..." : label}
                 </button>
               ))}
             </div>
           )}
         </div>
 
+        {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
           <span style={{ fontSize: 11, opacity: .3 }}>or connect a wallet directly</span>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
         </div>
 
+        {/* Option 2 – Wallets */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {WALLET_CONFIGS.map(({ chain, label, sub, icon, iconBg, placeholder, options, real }) => (
+          {WALLET_CONFIGS.map(({ chain, label, sub, iconBg, iconText, placeholder, options, real }) => (
             <div key={chain} style={{ flex: 1, minWidth: 240, background: "#0d0d0d", border: wallets[chain] ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 22 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{icon}</div>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{iconText}</div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600 }}>{label}</div>
                   <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>{sub}</div>
@@ -262,19 +347,19 @@ export default function LoginPage() {
               </div>
 
               {wallets[chain] ? (
-                <button onClick={() => disconnect(chain)} style={{ ...c, width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, cursor: "pointer" }}>
+                <button onClick={() => disconnect(chain)} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
                   Disconnect wallet
                 </button>
               ) : (
                 <div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 12 }}>
-                    {options.map((w) => (
-                      <button key={w}
-                        onClick={() => real && w === "MetaMask" ? connectMetaMask() : connectWallet(chain, w)}
-                        style={{ ...c, display: "flex", alignItems: "center", gap: 10, background: real && w === "MetaMask" ? "rgba(255,153,0,.08)" : "rgba(255,255,255,.05)", border: real && w === "MetaMask" ? "1px solid rgba(255,153,0,.3)" : "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "10px 13px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                        <span style={{ fontSize: 16 }}>{w === "MetaMask" ? "🦊" : w === "Ctrl Wallet" ? "🛡️" : w === "Lace Wallet" ? "🃏" : w === "Feather Wallet" ? "🪶" : "🎂"}</span>
-                        <span style={{ flex: 1 }}>{w}</span>
-                        {real && w === "MetaMask" && <span style={{ fontSize: 10, opacity: .6, background: "rgba(255,153,0,.15)", padding: "2px 6px", borderRadius: 4 }}>LIVE</span>}
+                    {options.map(({ name, Logo }) => (
+                      <button key={name}
+                        onClick={() => real && name === "MetaMask" ? connectMetaMask() : connectWallet(chain, name)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, background: real && name === "MetaMask" ? "rgba(255,153,0,.08)" : "rgba(255,255,255,.05)", border: real && name === "MetaMask" ? "1px solid rgba(255,153,0,.3)" : "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "10px 13px", borderRadius: 8, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
+                        <Logo />
+                        <span style={{ flex: 1 }}>{name}</span>
+                        {real && name === "MetaMask" && <span style={{ fontSize: 10, opacity: .6, background: "rgba(255,153,0,.15)", padding: "2px 6px", borderRadius: 4 }}>LIVE</span>}
                         <span style={{ opacity: .4, fontSize: 12 }}>{"→"}</span>
                       </button>
                     ))}
@@ -285,7 +370,7 @@ export default function LoginPage() {
                       onChange={(e) => setManualInputs((prev) => ({ ...prev, [chain]: e.target.value }))}
                       placeholder={placeholder}
                       style={{ flex: 1, background: "#000", border: "1px solid rgba(255,255,255,.15)", color: "#fff", padding: "9px 12px", borderRadius: 8, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
-                    <button onClick={() => manualConnect(chain)} style={{ ...c, background: "#fff", color: "#000", border: "none", padding: "9px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    <button onClick={() => manualConnect(chain)} style={{ background: "#fff", color: "#000", border: "none", padding: "9px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
                       Save
                     </button>
                   </div>
@@ -295,6 +380,7 @@ export default function LoginPage() {
           ))}
         </div>
 
+        {/* Summary */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35, marginTop: 4 }}>Account Summary</div>
         <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
           {SUMMARY_ROWS.map(({ label, value }) => (
@@ -313,8 +399,9 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* CTA */}
         <div style={{ textAlign: "center", marginTop: 8, marginBottom: 40 }}>
-          <button disabled={!hasAny} style={{ ...c, background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
+          <button disabled={!hasAny} style={{ background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, fontFamily: "inherit", cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
             Save and Continue
           </button>
           <div style={{ fontSize: 12, opacity: .35, marginTop: 10 }}>{ctaNote()}</div>

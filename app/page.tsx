@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { BrowserProvider } from "ethers";
 
 type Chain = "eth" | "night" | "xmr";
 
@@ -119,9 +118,8 @@ export default function LoginPage() {
     }
     try {
       setWalletLoading("eth");
-      const provider = new BrowserProvider(window.ethereum as Parameters<typeof BrowserProvider>[0]);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const address = (accounts as string[])[0];
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
+      const address = accounts[0];
       setWallets((prev) => ({ ...prev, eth: address }));
       showToast("MetaMask connected successfully");
     } catch {

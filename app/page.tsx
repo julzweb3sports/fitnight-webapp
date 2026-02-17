@@ -156,6 +156,8 @@ export default function LoginPage() {
     }
     try {
       setWalletLoading("eth");
+      // Zwingt MetaMask den Account-Auswahl Dialog zu öffnen
+      await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
       setWallets((prev) => ({ ...prev, eth: accounts[0] }));
       showToast("MetaMask connected successfully");

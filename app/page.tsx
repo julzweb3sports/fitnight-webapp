@@ -17,6 +17,14 @@ interface WalletState {
   xmr: string | null;
 }
 
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+    };
+  }
+}
+
 const FAKE_NIGHT = [
   "mn1qxy2kgdygjrsqtzq2n0yrf249xe2fyjeqxv9drx",
   "mn1q7y8kgdygjrsqtzq2n0yrf249xe2fyjeqxv9abc",
@@ -77,13 +85,6 @@ const SOCIAL_OPTIONS = [
   { key: "x", label: "X", icon: "🐦" },
 ];
 
-const SUMMARY_ROWS = (social: SocialUser | null, wallets: WalletState) => [
-  { label: "Social Login", value: social?.handle ?? null },
-  { label: "Midnight Address", value: wallets.night },
-  { label: "Ethereum Address", value: wallets.eth },
-  { label: "Monero Address", value: wallets.xmr },
-];
-
 export default function LoginPage() {
   const [social, setSocial] = useState<SocialUser | null>(null);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
@@ -111,7 +112,6 @@ export default function LoginPage() {
     showToast("Signed out");
   }
 
-  // ── Echte MetaMask Verbindung ──
   async function connectMetaMask() {
     if (typeof window === "undefined" || !window.ethereum) {
       showToast("MetaMask not found – please install it first");
@@ -119,9 +119,9 @@ export default function LoginPage() {
     }
     try {
       setWalletLoading("eth");
-      const provider = new BrowserProvider(window.ethereum);
+      const provider = new BrowserProvider(window.ethereum as Parameters<typeof BrowserProvider>[0]);
       const accounts = await provider.send("eth_requestAccounts", []);
-      const address = accounts[0];
+      const address = (accounts as string[])[0];
       setWallets((prev) => ({ ...prev, eth: address }));
       showToast("MetaMask connected successfully");
     } catch {
@@ -131,7 +131,6 @@ export default function LoginPage() {
     }
   }
 
-  // ── Simulierte Wallet Verbindung (NIGHT, XMR) ──
   function connectWallet(chain: Chain, walletName: string) {
     const fakeAddrs: Record<Chain, string[]> = {
       eth: [],
@@ -175,6 +174,13 @@ export default function LoginPage() {
 
   const c: React.CSSProperties = { fontFamily: "'Outfit', sans-serif" };
 
+  const SUMMARY_ROWS = [
+    { label: "Social Login", value: social?.handle ?? null },
+    { label: "Midnight Address", value: wallets.night },
+    { label: "Ethereum Address", value: wallets.eth },
+    { label: "Monero Address", value: wallets.xmr },
+  ];
+
   return (
     <main style={{ ...c, background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
 
@@ -188,7 +194,6 @@ export default function LoginPage() {
 
       <div style={{ width: "100%", maxWidth: 760, display: "flex", flexDirection: "column", gap: 16 }}>
 
-        {/* Option 1 – Social */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
         <div style={{ background: "#0d0d0d", border: social ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "24px 28px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -231,14 +236,12 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
           <span style={{ fontSize: 11, opacity: .3 }}>or connect a wallet directly</span>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
         </div>
 
-        {/* Option 2 – Wallets */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {WALLET_CONFIGS.map(({ chain, label, sub, icon, iconBg, placeholder, options, real }) => (
@@ -294,10 +297,9 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* Summary */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35, marginTop: 4 }}>Account Summary</div>
         <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
-          {SUMMARY_ROWS(social, wallets).map(({ label, value }) => (
+          {SUMMARY_ROWS.map(({ label, value }) => (
             <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.06)", fontSize: 13 }}>
               <span style={{ opacity: .5 }}>{label}</span>
               <span style={{ fontFamily: value ? "monospace" : "inherit", fontSize: value ? 11 : 12, opacity: value ? .8 : .3, fontStyle: value ? "normal" : "italic" }}>
@@ -313,7 +315,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* CTA */}
         <div style={{ textAlign: "center", marginTop: 8, marginBottom: 40 }}>
           <button disabled={!hasAny} style={{ ...c, background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
             Save and Continue

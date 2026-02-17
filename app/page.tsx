@@ -1,4 +1,30 @@
-"use client";
+// ── Wallet Logos ──
+const EthereumLogo = () => (
+  <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#627EEA"/>
+    <path d="M16 5v8.5l7 3.1L16 5z" fill="white" opacity="0.6"/>
+    <path d="M16 5L9 16.6l7-3.1V5z" fill="white"/>
+    <path d="M16 21.8v5.2l7-9.7-7 4.5z" fill="white" opacity="0.6"/>
+    <path d="M16 27v-5.2l-7-4.5L16 27z" fill="white"/>
+    <path d="M16 20.6l7-4.1-7-3.1v7.2z" fill="white" opacity="0.6"/>
+    <path d="M9 16.5l7 4.1v-7.2L9 16.5z" fill="white" opacity="0.2"/>
+  </svg>
+);
+
+const MidnightLogo = () => (
+  <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg, #1a0a2e, #7B2FBE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "white", fontWeight: 700 }}>M</div>
+);
+
+const MetaMaskLogo = () => (
+  <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg, #E2761B, #f6a23a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🦊</div>
+);
+
+const CtrlWalletLogo = () => (
+  <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg, #7C3AED, #4F46E5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "white", fontWeight: 700 }}>C</div>
+);
+
+const LaceWalletLogo = () => (
+  <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg, #0"use client";
 
 import { useState } from "react";
 
@@ -78,8 +104,10 @@ const EthereumLogo = () => (
   </svg>
 );
 
-const MidnightLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
+const MidnightLogo = () => <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain" }} />;
+const MetaMaskLogo = () => <img src="/metamask.png" width={22} height={22} alt="MetaMask" style={{ borderRadius: 4, objectFit: "contain" }} />;
+const CtrlWalletLogo = () => <img src="/ctrl.png" width={22} height={22} alt="Ctrl Wallet" style={{ borderRadius: 4, objectFit: "contain" }} />;
+const LaceWalletLogo = () => <img src="/lace.png" width={22} height={22} alt="Lace Wallet" style={{ borderRadius: 4, objectFit: "contain" }} />;
     <circle cx="50" cy="50" r="50" fill="#0a0a0a"/>
     <circle cx="50" cy="50" r="38" fill="#1a0533"/>
     <path d="M50 15 C30 15 15 30 15 50 C15 70 30 85 50 85 C45 70 43 60 43 50 C43 40 45 30 50 15Z" fill="#7B2FBE"/>

@@ -124,12 +124,12 @@ export default function LoginPage() {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
-          <div style={{ fontSize: 14, opacity: 0.4, marginTop: 6 }}>Sign in with social or connect your wallet</div>
+          <div style={{ fontSize: 14, opacity: 0.65, marginTop: 6 }}>Sign in with social or connect your wallet</div>
         </div>
 
         {/* Option 1 – Social Login via Dynamic */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 1 – Social Login</div>
 
           {isLoggedIn ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
@@ -158,12 +158,12 @@ export default function LoginPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
-          <span style={{ fontSize: 11, opacity: .3 }}>or connect a wallet directly</span>
+          <span style={{ fontSize: 11, opacity: .5 }}>or connect a wallet directly</span>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
         </div>
 
         {/* Option 2 – Wallets */}
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 2 – Link Wallets</div>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 
           {/* Midnight Preview Panel */}
@@ -239,18 +239,18 @@ export default function LoginPage() {
         </div>
 
         {/* Summary */}
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35, marginTop: 4 }}>Account Summary</div>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55, marginTop: 4 }}>Account Summary</div>
         <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
           {SUMMARY_ROWS.map(({ label, value }) => (
             <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.06)", fontSize: 13 }}>
-              <span style={{ opacity: .5 }}>{label}</span>
+              <span style={{ opacity: .7 }}>{label}</span>
               <span style={{ fontFamily: value ? "monospace" : "inherit", fontSize: value ? 11 : 12, opacity: value ? .8 : .3, fontStyle: value ? "normal" : "italic" }}>
                 {value ? shortAddr(value) : "Not linked"}
               </span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", fontSize: 13 }}>
-            <span style={{ opacity: .5 }}>Status</span>
+            <span style={{ opacity: .7 }}>Status</span>
             <span style={{ background: hasAny ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.04)", color: hasAny ? "#4ade80" : "rgba(255,255,255,.3)", border: hasAny ? "1px solid rgba(74,222,128,.2)" : "1px solid rgba(255,255,255,.08)", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
               {hasAny ? "Ready" : "Incomplete"}
             </span>

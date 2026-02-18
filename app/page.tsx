@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
+import { useRouter } from "next/navigation";
 
 interface WalletState {
   eth: string | null;
@@ -13,7 +14,6 @@ function shortAddr(addr: string) {
   return addr.slice(0, 8) + "..." + addr.slice(-6);
 }
 
-// ── Wallet Logos ──
 const MidnightLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
   <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
@@ -31,15 +31,12 @@ export default function LoginPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [cardanoError, setCardanoError] = useState<string | null>(null);
 
-  // Dynamic – Social Login + ETH embedded wallet
+  const router = useRouter();
   const { primaryWallet, handleLogOut, user } = useDynamicContext();
   const isLoggedIn = useIsLoggedIn();
-
-  // Cardano via Mesh
   const { connect, disconnect: meshDisconnect, connected, wallet } = useWallet();
   const availableWallets = useWalletList();
 
-  // Sync ETH address from Dynamic
   useEffect(() => {
     if (isLoggedIn && primaryWallet?.address) {
       setWallets((prev) => ({ ...prev, eth: primaryWallet.address }));
@@ -48,7 +45,6 @@ export default function LoginPage() {
     }
   }, [isLoggedIn, primaryWallet]);
 
-  // Sync Cardano address from Mesh
   useEffect(() => {
     if (connected && wallet) {
       wallet.getChangeAddress().then((addr) => {
@@ -73,7 +69,6 @@ export default function LoginPage() {
       const api = await (window as any).cardano[walletKey].enable();
       const addresses = await api.getUsedAddresses();
       const hexAddr = addresses[0] ?? await api.getChangeAddress();
-      // Convert hex to readable bech32 addr1... format
       const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
       const readable = Address.from_bytes(Buffer.from(hexAddr, "hex")).to_bech32();
       setWallets((prev) => ({ ...prev, cardano: readable }));
@@ -121,27 +116,20 @@ export default function LoginPage() {
     <main style={{ background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
       <div style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", gap: 20 }}>
 
-        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
           <div style={{ fontSize: 14, opacity: 0.65, marginTop: 6 }}>Sign in with social or connect your wallet</div>
         </div>
 
-        {/* Option 1 – Social Login via Dynamic */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 1 – Social Login</div>
-
           {isLoggedIn ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                  👤
-                </div>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👤</div>
                 <div>
                   <div style={{ fontWeight: 600 }}>{user?.email ?? user?.username ?? "Connected"}</div>
-                  <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>
-                    ETH: {wallets.eth ? shortAddr(wallets.eth) : "creating..."}
-                  </div>
+                  <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>ETH: {wallets.eth ? shortAddr(wallets.eth) : "creating..."}</div>
                 </div>
               </div>
               <button onClick={logout} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
@@ -150,7 +138,6 @@ export default function LoginPage() {
             </div>
           ) : (
             <div style={{ display: "flex", justifyContent: "center" }}>
-              {/* DynamicWidget zeigt Google, X, Email, externe Wallets – alles in einem */}
               <DynamicWidget />
             </div>
           )}
@@ -162,15 +149,12 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
         </div>
 
-        {/* Option 2 – Wallets */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 
           {/* Midnight Preview Panel */}
           <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, padding: 24, opacity: 0.5, position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.5)", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "3px 9px", borderRadius: 20 }}>
-              Coming Soon
-            </div>
+            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.5)", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "3px 9px", borderRadius: 20 }}>Coming Soon</div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <MidnightLogo />
               <div>
@@ -179,18 +163,13 @@ export default function LoginPage() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#444" }} />
-              Not available yet
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#444" }} />Not available yet
             </div>
-            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "rgba(255,255,255,.2)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: "italic" }}>
-              No address linked yet
-            </div>
-            <button disabled style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.2)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>
-              Coming soon
-            </button>
+            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "rgba(255,255,255,.2)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: "italic" }}>No address linked yet</div>
+            <button disabled style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.2)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>Coming soon</button>
           </div>
 
-          {/* Cardano Panel – Mesh SDK */}
+          {/* Cardano Panel */}
           <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: connected ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <CardanoLogo />
@@ -200,27 +179,18 @@ export default function LoginPage() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={dot(connected)} />
-              {connected ? "Connected" : "Not connected"}
+              <div style={dot(connected)} />{connected ? "Connected" : "Not connected"}
             </div>
             <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.cardano ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.cardano ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.cardano ? "normal" : "italic" }}>
               {wallets.cardano ?? "No address linked yet"}
             </div>
-
             {cardanoError && (
-              <div style={{ fontSize: 11, color: "rgba(255,100,100,.7)", marginBottom: 10, padding: "8px 12px", background: "rgba(255,50,50,.07)", borderRadius: 8, border: "1px solid rgba(255,50,50,.15)" }}>
-                {cardanoError}
-              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,100,100,.7)", marginBottom: 10, padding: "8px 12px", background: "rgba(255,50,50,.07)", borderRadius: 8, border: "1px solid rgba(255,50,50,.15)" }}>{cardanoError}</div>
             )}
-
             {connected ? (
-              <button onClick={disconnectCardano} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
-                Disconnect wallet
-              </button>
+              <button onClick={disconnectCardano} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>Disconnect wallet</button>
             ) : availableWallets.length === 0 ? (
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", textAlign: "center", padding: "12px 0", fontStyle: "italic" }}>
-                No Cardano wallet detected. Install Eternl, Nami or Lace.
-              </div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", textAlign: "center", padding: "12px 0", fontStyle: "italic" }}>No Cardano wallet detected. Install Eternl, Nami or Lace.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {availableWallets.map((w) => (
@@ -238,7 +208,6 @@ export default function LoginPage() {
 
         </div>
 
-        {/* Summary */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55, marginTop: 4 }}>Account Summary</div>
         <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
           {SUMMARY_ROWS.map(({ label, value }) => (
@@ -257,9 +226,11 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* CTA */}
         <div style={{ textAlign: "center", marginTop: 8, marginBottom: 40 }}>
-          <button disabled={!hasAny} style={{ background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, fontFamily: "inherit", cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
+          <button
+            disabled={!hasAny}
+            onClick={() => router.push("/dashboard")}
+            style={{ background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, fontFamily: "inherit", cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
             Save and Continue
           </button>
           <div style={{ fontSize: 12, opacity: .35, marginTop: 10 }}>{ctaNote()}</div>
@@ -272,7 +243,6 @@ export default function LoginPage() {
           {toast}
         </div>
       )}
-
     </main>
   );
 }

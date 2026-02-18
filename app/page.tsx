@@ -70,6 +70,11 @@ export default function LoginPage() {
     setCardanoError(null);
     try {
       await connect(walletKey);
+      // wallet object is not yet updated in state, so we read directly from window.cardano
+      const api = await (window as any).cardano[walletKey].enable();
+      const addresses = await api.getUsedAddresses();
+      const addr = addresses[0] ?? await api.getChangeAddress();
+      setWallets((prev) => ({ ...prev, cardano: addr }));
       showToast(walletName + " linked successfully");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not connect wallet";

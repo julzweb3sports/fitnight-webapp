@@ -5,6 +5,7 @@ import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rai
 import { WagmiProvider } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { MeshProvider } from "@meshsdk/react";
 
 const config = getDefaultConfig({
   appName: "Fitnight",
@@ -17,18 +18,20 @@ const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: "#fff",
-            accentColorForeground: "#000",
-            borderRadius: "medium",
-          })}
-        >
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <MeshProvider>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider
+            theme={darkTheme({
+              accentColor: "#fff",
+              accentColorForeground: "#000",
+              borderRadius: "medium",
+            })}
+          >
+            {children}
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </MeshProvider>
   );
 }

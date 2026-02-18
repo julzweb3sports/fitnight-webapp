@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
+import { useWallet, useWalletList } from "@meshsdk/react";
 
 interface SocialUser {
   name: string;
@@ -12,13 +13,9 @@ interface SocialUser {
 
 interface WalletState {
   eth: string | null;
-  night: string | null;
+  cardano: string | null;
 }
 
-const FAKE_NIGHT = [
-  "mn1qxy2kgdygjrsqtzq2n0yrf249xe2fyjeqxv9drx",
-  "mn1q7y8kgdygjrsqtzq2n0yrf249xe2fyjeqxv9abc",
-];
 const FAKE_NAMES: Record<string, string[]> = {
   google: ["alex.fitnight@gmail.com", "sarah.k@gmail.com"],
   telegram: ["@fitnight_alex", "@sarah_trains"],
@@ -62,13 +59,14 @@ const MidnightLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
   <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
 );
-const CtrlWalletLogo = () => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img src="/ctrl.png" width={22} height={22} alt="Ctrl Wallet" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
-);
-const LaceWalletLogo = () => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img src="/lace.png" width={22} height={22} alt="Lace Wallet" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
+
+
+// Cardano Logo (inline SVG)
+const CardanoLogo = () => (
+  <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#0033AD"/>
+    <path d="M16 7a1.2 1.2 0 1 1 0 2.4A1.2 1.2 0 0 1 16 7zm-5.5 2.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM8 14a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm16 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-13.5 4.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM16 22.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z" fill="white" opacity="0.9"/>
+  </svg>
 );
 
 const SOCIAL_OPTIONS = [
@@ -77,15 +75,23 @@ const SOCIAL_OPTIONS = [
   { key: "x", label: "X", Logo: XLogo },
 ];
 
+
+
 export default function LoginPage() {
   const [social, setSocial] = useState<SocialUser | null>(null);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
-  const [wallets, setWallets] = useState<WalletState>({ eth: null, night: null });
-  const [walletLoading, setWalletLoading] = useState<"night" | null>(null);
+  const [wallets, setWallets] = useState<WalletState>({ eth: null, cardano: null });
   const [toast, setToast] = useState<string | null>(null);
+  const [cardanoError, setCardanoError] = useState<string | null>(null);
 
+  // Ethereum
   const { address, isConnected } = useAccount();
 
+  // Cardano via Mesh
+  const { connect, disconnect: meshDisconnect, connected, wallet } = useWallet();
+  const availableWallets = useWalletList();
+
+  // Sync ETH address
   useEffect(() => {
     if (isConnected && address) {
       setWallets((prev) => ({ ...prev, eth: address }));
@@ -93,6 +99,19 @@ export default function LoginPage() {
       setWallets((prev) => ({ ...prev, eth: null }));
     }
   }, [isConnected, address]);
+
+  // Sync Cardano address
+  useEffect(() => {
+    if (connected && wallet) {
+      wallet.getChangeAddress().then((addr) => {
+        setWallets((prev) => ({ ...prev, cardano: addr }));
+      }).catch(() => {
+        setWallets((prev) => ({ ...prev, cardano: null }));
+      });
+    } else {
+      setWallets((prev) => ({ ...prev, cardano: null }));
+    }
+  }, [connected, wallet]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -113,25 +132,29 @@ export default function LoginPage() {
     showToast("Signed out");
   }
 
-  function connectWallet(walletName: string) {
-    setWalletLoading("night");
-    setTimeout(() => {
-      setWallets((prev) => ({ ...prev, night: rand(FAKE_NIGHT) }));
-      setWalletLoading(null);
+  async function connectCardanoWallet(walletKey: string, walletName: string) {
+    setCardanoError(null);
+    try {
+      await connect(walletKey);
       showToast(walletName + " linked successfully");
-    }, 1400);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not connect wallet";
+      setCardanoError(msg);
+      showToast("Connection failed");
+    }
   }
 
-  function disconnect(chain: "night") {
-    setWallets((prev) => ({ ...prev, [chain]: null }));
-    showToast("Wallet disconnected");
+  async function disconnectCardano() {
+    await meshDisconnect();
+    setWallets((prev) => ({ ...prev, cardano: null }));
+    showToast("Cardano wallet disconnected");
   }
 
-  const hasAny = !!(social || wallets.eth || wallets.night);
+  const hasAny = !!(social || wallets.eth || wallets.cardano);
 
   function ctaNote() {
-    const hasWallet = wallets.eth || wallets.night;
-    if (social && wallets.eth && wallets.night) return "All set — social login + both wallets linked!";
+    const hasWallet = wallets.eth || wallets.cardano;
+    if (social && wallets.eth && wallets.cardano) return "All set — social login + both wallets linked!";
     if (social && hasWallet) return "Ready! You can also link the other wallet.";
     if (social) return "Signed in via social. You can also link a wallet.";
     if (hasWallet) return "Wallet linked. You can also sign in socially.";
@@ -140,45 +163,29 @@ export default function LoginPage() {
 
   const SUMMARY_ROWS = [
     { label: "Social Login", value: social?.handle ?? null },
-    { label: "Midnight Address", value: wallets.night },
+    { label: "Cardano Address", value: wallets.cardano },
     { label: "Ethereum Address", value: wallets.eth },
   ];
 
-  const dot = (on: boolean, loading?: boolean) => ({
+  const dot = (on: boolean) => ({
     width: 7, height: 7, borderRadius: "50%",
-    background: on ? "#4ade80" : loading ? "#f59e0b" : "#444",
+    background: on ? "#4ade80" : "#444",
     boxShadow: on ? "0 0 6px #4ade80" : "none",
   } as React.CSSProperties);
 
   return (
     <main style={{ background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+      <div style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", gap: 20 }}>
 
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: 4, textTransform: "uppercase", opacity: .5, marginBottom: 14 }}>Fitnight</div>
-        <h1 style={{ fontSize: 34, fontWeight: 700, marginBottom: 10 }}>Connect Wallet or Create Account</h1>
-        <p style={{ fontSize: 15, opacity: .5, maxWidth: 420, margin: "0 auto", lineHeight: 1.6 }}>
-          Choose any option below to get started — you only need one to use Fitnight.
-        </p>
-      </div>
-
-      <div style={{ width: "100%", maxWidth: 760, display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
+          <div style={{ fontSize: 14, opacity: 0.4, marginTop: 6 }}>Sign in with social or connect your wallet</div>
+        </div>
 
         {/* Option 1 – Social */}
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
-        <div style={{ background: "#0d0d0d", border: social ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "24px 28px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔑</div>
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 600 }}>Sign in with Social</div>
-                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>No wallet required · Quick and easy</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, opacity: .5 }}>
-              <div style={dot(!!social)} />
-              {social ? "Signed in" : socialLoading ? "Connecting..." : "Not signed in"}
-            </div>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
 
           {social ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
@@ -217,9 +224,14 @@ export default function LoginPage() {
         {/* Option 2 – Wallets */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          
-          {/* Midnight Wallet */}
-          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets.night ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
+
+          {/* Midnight Preview Panel */}
+          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, padding: 24, opacity: 0.5, position: "relative", overflow: "hidden" }}>
+            {/* Coming Soon Badge */}
+            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.5)", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "3px 9px", borderRadius: 20 }}>
+              Coming Soon
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <MidnightLogo />
               <div>
@@ -229,36 +241,68 @@ export default function LoginPage() {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={dot(!!wallets.night, walletLoading === "night")} />
-              {wallets.night ? "Connected" : walletLoading === "night" ? "Connecting..." : "Not connected"}
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#444" }} />
+              Not available yet
             </div>
 
-            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.night ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.night ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.night ? "normal" : "italic" }}>
-              {wallets.night ?? "No address linked yet"}
+            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "rgba(255,255,255,.2)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: "italic" }}>
+              No address linked yet
             </div>
 
-            {wallets.night ? (
-              <button onClick={() => disconnect("night")} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+            <button disabled style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.2)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>
+              Coming soon
+            </button>
+          </div>
+
+          {/* Cardano Panel – Mesh SDK */}
+          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: connected ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <CardanoLogo />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>Cardano (ADA)</div>
+                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Powered by Mesh SDK</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
+              <div style={dot(connected)} />
+              {connected ? "Connected" : "Not connected"}
+            </div>
+
+            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.cardano ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.cardano ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.cardano ? "normal" : "italic" }}>
+              {wallets.cardano ?? "No address linked yet"}
+            </div>
+
+            {cardanoError && (
+              <div style={{ fontSize: 11, color: "rgba(255,100,100,.7)", marginBottom: 10, padding: "8px 12px", background: "rgba(255,50,50,.07)", borderRadius: 8, border: "1px solid rgba(255,50,50,.15)" }}>
+                {cardanoError}
+              </div>
+            )}
+
+            {connected ? (
+              <button onClick={disconnectCardano} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
                 Disconnect wallet
               </button>
+            ) : availableWallets.length === 0 ? (
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", textAlign: "center", padding: "12px 0", fontStyle: "italic" }}>
+                No Cardano wallet detected. Install Eternl, Nami or Lace.
+              </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[
-                  { name: "Ctrl Wallet", Logo: CtrlWalletLogo },
-                  { name: "Lace Wallet", Logo: LaceWalletLogo },
-                ].map(({ name, Logo }) => (
-                  <button key={name} onClick={() => connectWallet(name)}
+                {availableWallets.map((w) => (
+                  <button key={w.id} onClick={() => connectCardanoWallet(w.id, w.name)}
                     style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "12px 14px", borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
-                    <Logo />
-                    <span style={{ flex: 1 }}>{name}</span>
-                    <span style={{ opacity: .3, fontSize: 12 }}>{"→"}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={w.icon} width={22} height={22} alt={w.name} style={{ borderRadius: 4, objectFit: "contain" }} />
+                    <span style={{ flex: 1 }}>{w.name}</span>
+                    <span style={{ opacity: .3, fontSize: 12 }}>→</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Ethereum Wallet - RainbowKit */}
+          {/* Ethereum Panel – RainbowKit */}
           <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets.eth ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <svg width="22" height="22" viewBox="0 0 32 32" fill="none">

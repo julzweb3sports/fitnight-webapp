@@ -205,7 +205,13 @@ function NFTsTab() {
     setCardanoLoading(true);
     setCardanoError(null);
 
-    wallet.getChangeAddress().then(async (address) => {
+    wallet.getChangeAddress().then(async (rawAddress) => {
+      // Convert hex to bech32 if needed
+      let address = rawAddress;
+      if (!rawAddress.startsWith('addr')) {
+        const { Address } = await import('@emurgo/cardano-serialization-lib-browser');
+        address = Address.from_bytes(Buffer.from(rawAddress, 'hex')).to_bech32();
+      }
       const res = await fetch(`https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}/utxos`, {
         headers: { project_id: blockfrostKey },
       });

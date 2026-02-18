@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
-type Chain = "eth" | "night";
+import { useState, useEffect } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 
 interface SocialUser {
   name: string;
@@ -13,14 +13,6 @@ interface SocialUser {
 interface WalletState {
   eth: string | null;
   night: string | null;
-}
-
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-    };
-  }
 }
 
 const FAKE_NIGHT = [
@@ -66,25 +58,9 @@ const XLogo = () => (
 );
 
 // ── Wallet Logos ──
-const EthereumLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="16" fill="#627EEA"/>
-    <path d="M16 5v8.5l7 3.1L16 5z" fill="white" opacity="0.6"/>
-    <path d="M16 5L9 16.6l7-3.1V5z" fill="white"/>
-    <path d="M16 21.8v5.2l7-9.7-7 4.5z" fill="white" opacity="0.6"/>
-    <path d="M16 27v-5.2l-7-4.5L16 27z" fill="white"/>
-    <path d="M16 20.6l7-4.1-7-3.1v7.2z" fill="white" opacity="0.6"/>
-    <path d="M9 16.5l7 4.1v-7.2L9 16.5z" fill="white" opacity="0.2"/>
-  </svg>
-);
-
 const MidnightLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
   <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
-);
-const MetaMaskLogo = () => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img src="/metamask.png" width={22} height={22} alt="MetaMask" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
 );
 const CtrlWalletLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
@@ -94,28 +70,6 @@ const LaceWalletLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
   <img src="/lace.png" width={22} height={22} alt="Lace Wallet" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
 );
-
-const WALLET_CONFIGS = [
-  {
-    chain: "night" as Chain,
-    label: "Midnight (NIGHT)",
-    sub: "Privacy chain · ZK-powered",
-    ChainLogo: MidnightLogo,
-    options: [
-      { name: "Ctrl Wallet", Logo: CtrlWalletLogo, live: false },
-      { name: "Lace Wallet", Logo: LaceWalletLogo, live: false },
-    ],
-  },
-  {
-    chain: "eth" as Chain,
-    label: "Ethereum",
-    sub: "EVM-compatible · ERC-1155 NFTs",
-    ChainLogo: EthereumLogo,
-    options: [
-      { name: "MetaMask", Logo: MetaMaskLogo, live: true },
-    ],
-  },
-];
 
 const SOCIAL_OPTIONS = [
   { key: "google", label: "Google", Logo: GoogleLogo },
@@ -127,8 +81,18 @@ export default function LoginPage() {
   const [social, setSocial] = useState<SocialUser | null>(null);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [wallets, setWallets] = useState<WalletState>({ eth: null, night: null });
-  const [walletLoading, setWalletLoading] = useState<Chain | null>(null);
+  const [walletLoading, setWalletLoading] = useState<"night" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  const { address, isConnected } = useAccount();
+
+  useEffect(() => {
+    if (isConnected && address) {
+      setWallets((prev) => ({ ...prev, eth: address }));
+    } else {
+      setWallets((prev) => ({ ...prev, eth: null }));
+    }
+  }, [isConnected, address]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -149,35 +113,16 @@ export default function LoginPage() {
     showToast("Signed out");
   }
 
-  async function connectMetaMask() {
-    if (typeof window === "undefined" || !window.ethereum) {
-      showToast("MetaMask not found – please install it first");
-      return;
-    }
-    try {
-      setWalletLoading("eth");
-      // Zwingt MetaMask den Account-Auswahl Dialog zu öffnen
-      await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
-      setWallets((prev) => ({ ...prev, eth: accounts[0] }));
-      showToast("MetaMask connected successfully");
-    } catch {
-      showToast("MetaMask connection cancelled");
-    } finally {
-      setWalletLoading(null);
-    }
-  }
-
-  function connectWallet(chain: Chain, walletName: string) {
-    setWalletLoading(chain);
+  function connectWallet(walletName: string) {
+    setWalletLoading("night");
     setTimeout(() => {
-      setWallets((prev) => ({ ...prev, [chain]: rand(FAKE_NIGHT) }));
+      setWallets((prev) => ({ ...prev, night: rand(FAKE_NIGHT) }));
       setWalletLoading(null);
       showToast(walletName + " linked successfully");
     }, 1400);
   }
 
-  function disconnect(chain: Chain) {
+  function disconnect(chain: "night") {
     setWallets((prev) => ({ ...prev, [chain]: null }));
     showToast("Wallet disconnected");
   }
@@ -218,6 +163,7 @@ export default function LoginPage() {
 
       <div style={{ width: "100%", maxWidth: 760, display: "flex", flexDirection: "column", gap: 16 }}>
 
+        {/* Option 1 – Social */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
         <div style={{ background: "#0d0d0d", border: social ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "24px 28px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -268,49 +214,85 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
         </div>
 
+        {/* Option 2 – Wallets */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 2 – Link Wallets</div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {WALLET_CONFIGS.map(({ chain, label, sub, ChainLogo, options }) => (
-            <div key={chain} style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets[chain] ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                <ChainLogo />
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 600 }}>{label}</div>
-                  <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>{sub}</div>
-                </div>
+          
+          {/* Midnight Wallet */}
+          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets.night ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <MidnightLogo />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>Midnight (NIGHT)</div>
+                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Privacy chain · ZK-powered</div>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-                <div style={dot(!!wallets[chain], walletLoading === chain)} />
-                {wallets[chain] ? "Connected" : walletLoading === chain ? "Connecting..." : "Not connected"}
-              </div>
-
-              <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets[chain] ? "monospace" : "inherit", wordBreak: "break-all", color: wallets[chain] ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets[chain] ? "normal" : "italic" }}>
-                {wallets[chain] ?? "No address linked yet"}
-              </div>
-
-              {wallets[chain] ? (
-                <button onClick={() => disconnect(chain)} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
-                  Disconnect wallet
-                </button>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {options.map(({ name, Logo, live }) => (
-                    <button key={name}
-                      onClick={() => live ? connectMetaMask() : connectWallet(chain, name)}
-                      style={{ display: "flex", alignItems: "center", gap: 12, background: live ? "rgba(255,153,0,.08)" : "rgba(255,255,255,.05)", border: live ? "1px solid rgba(255,153,0,.3)" : "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "12px 14px", borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
-                      <Logo />
-                      <span style={{ flex: 1 }}>{name}</span>
-                      {live && <span style={{ fontSize: 10, opacity: .7, background: "rgba(255,153,0,.15)", padding: "2px 8px", borderRadius: 4, color: "#f59e0b" }}>LIVE</span>}
-                      <span style={{ opacity: .3, fontSize: 12 }}>{"→"}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          ))}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
+              <div style={dot(!!wallets.night, walletLoading === "night")} />
+              {wallets.night ? "Connected" : walletLoading === "night" ? "Connecting..." : "Not connected"}
+            </div>
+
+            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.night ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.night ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.night ? "normal" : "italic" }}>
+              {wallets.night ?? "No address linked yet"}
+            </div>
+
+            {wallets.night ? (
+              <button onClick={() => disconnect("night")} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+                Disconnect wallet
+              </button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[
+                  { name: "Ctrl Wallet", Logo: CtrlWalletLogo },
+                  { name: "Lace Wallet", Logo: LaceWalletLogo },
+                ].map(({ name, Logo }) => (
+                  <button key={name} onClick={() => connectWallet(name)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "12px 14px", borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
+                    <Logo />
+                    <span style={{ flex: 1 }}>{name}</span>
+                    <span style={{ opacity: .3, fontSize: 12 }}>{"→"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Ethereum Wallet - RainbowKit */}
+          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets.eth ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="16" fill="#627EEA"/>
+                <path d="M16 5v8.5l7 3.1L16 5z" fill="white" opacity="0.6"/>
+                <path d="M16 5L9 16.6l7-3.1V5z" fill="white"/>
+                <path d="M16 21.8v5.2l7-9.7-7 4.5z" fill="white" opacity="0.6"/>
+                <path d="M16 27v-5.2l-7-4.5L16 27z" fill="white"/>
+                <path d="M16 20.6l7-4.1-7-3.1v7.2z" fill="white" opacity="0.6"/>
+                <path d="M9 16.5l7 4.1v-7.2L9 16.5z" fill="white" opacity="0.2"/>
+              </svg>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>Ethereum</div>
+                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>EVM-compatible · 50+ Wallets</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
+              <div style={dot(!!wallets.eth)} />
+              {wallets.eth ? "Connected" : "Not connected"}
+            </div>
+
+            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.eth ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.eth ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.eth ? "normal" : "italic" }}>
+              {wallets.eth ? shortAddr(wallets.eth) : "No address linked yet"}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <ConnectButton showBalance={false} chainStatus="none" />
+            </div>
+          </div>
+
         </div>
 
+        {/* Summary */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35, marginTop: 4 }}>Account Summary</div>
         <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
           {SUMMARY_ROWS.map(({ label, value }) => (
@@ -329,6 +311,7 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* CTA */}
         <div style={{ textAlign: "center", marginTop: 8, marginBottom: 40 }}>
           <button disabled={!hasAny} style={{ background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, fontFamily: "inherit", cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
             Save and Continue

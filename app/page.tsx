@@ -3,246 +3,386 @@
 import { useState, useEffect } from "react";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
-import { useRouter } from "next/navigation";
 
-interface WalletState {
-  eth: string | null;
-  cardano: string | null;
+type Tab = "nfts" | "memberships" | "buy" | "create";
+
+interface EthNFT {
+  tokenId: string;
+  name: string;
+  image: string | null;
+  collection: string;
+  chain: string;
+}
+
+interface CardanoNFT {
+  asset: string;
+  name: string;
+  image: string | null;
+  quantity: string;
 }
 
 function shortAddr(addr: string) {
+  if (!addr) return "";
   return addr.slice(0, 8) + "..." + addr.slice(-6);
 }
 
+function ipfsToHttp(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("ipfs://")) return url.replace("ipfs://", "https://ipfs.io/ipfs/");
+  return url;
+}
+
+// ── Icons ──
+const IconNFT = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/>
+  </svg>
+);
+const IconMembership = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+  </svg>
+);
+const IconBuy = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+  </svg>
+);
+const IconCreate = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+  </svg>
+);
+
 const MidnightLogo = () => (
   // eslint-disable-next-line @next/next/no-img-element
-  <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
+  <img src="/midnight.png" width={20} height={20} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block", opacity: 0.4 }} />
 );
 
 const CardanoLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+  <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="16" fill="#0033AD"/>
     <path d="M16 7a1.2 1.2 0 1 1 0 2.4A1.2 1.2 0 0 1 16 7zm-5.5 2.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM8 14a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm16 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-13.5 4.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM16 22.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z" fill="white" opacity="0.9"/>
   </svg>
 );
 
-export default function LoginPage() {
-  const [wallets, setWallets] = useState<WalletState>({ eth: null, cardano: null });
-  const [toast, setToast] = useState<string | null>(null);
+const TABS = [
+  { key: "nfts" as Tab, label: "My NFTs", Icon: IconNFT },
+  { key: "memberships" as Tab, label: "My Memberships", Icon: IconMembership },
+  { key: "buy" as Tab, label: "Buy Membership", Icon: IconBuy },
+  { key: "create" as Tab, label: "Create Membership", Icon: IconCreate },
+];
+
+function ComingSoonTab({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 16, opacity: 0.4 }}>
+      <div style={{ fontSize: 48 }}>🚧</div>
+      <div style={{ fontSize: 18, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 13 }}>This section is coming soon.</div>
+    </div>
+  );
+}
+
+// ── NFT Card ──
+function NFTCard({ name, image, subtitle, badge }: { name: string; image: string | null; subtitle: string; badge?: string }) {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ width: "100%", aspectRatio: "1", background: "rgba(255,255,255,.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, position: "relative" }}>
+        {image && !imgError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt={name} onError={() => setImgError(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : "🖼️"}
+        {badge && (
+          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,.7)", border: "1px solid rgba(255,255,255,.15)", color: "rgba(255,255,255,.7)", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", padding: "2px 7px", borderRadius: 20 }}>
+            {badge}
+          </div>
+        )}
+      </div>
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name || "Unnamed NFT"}</div>
+        <div style={{ fontSize: 11, opacity: 0.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── NFTs Tab ──
+function NFTsTab() {
+  const { primaryWallet } = useDynamicContext();
+  const { connected, wallet } = useWallet();
+
+  const [ethNFTs, setEthNFTs] = useState<EthNFT[]>([]);
+  const [cardanoNFTs, setCardanoNFTs] = useState<CardanoNFT[]>([]);
+  const [ethLoading, setEthLoading] = useState(false);
+  const [cardanoLoading, setCardanoLoading] = useState(false);
+  const [ethError, setEthError] = useState<string | null>(null);
   const [cardanoError, setCardanoError] = useState<string | null>(null);
 
-  const router = useRouter();
-  const { primaryWallet, handleLogOut, user } = useDynamicContext();
-  const isLoggedIn = useIsLoggedIn();
-  const { connect, disconnect: meshDisconnect, connected, wallet } = useWallet();
-  const availableWallets = useWalletList();
+  const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  const blockfrostKey = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY;
 
   useEffect(() => {
-    if (isLoggedIn && primaryWallet?.address) {
-      setWallets((prev) => ({ ...prev, eth: primaryWallet.address }));
-    } else {
-      setWallets((prev) => ({ ...prev, eth: null }));
-    }
-  }, [isLoggedIn, primaryWallet]);
+    if (!primaryWallet?.address || !alchemyKey) return;
+    setEthLoading(true);
+    setEthError(null);
+    const chains = [
+      { name: "Ethereum", base: `https://eth-mainnet.g.alchemy.com/nft/v3/${alchemyKey}` },
+      { name: "Polygon", base: `https://polygon-mainnet.g.alchemy.com/nft/v3/${alchemyKey}` },
+      { name: "Base", base: `https://base-mainnet.g.alchemy.com/nft/v3/${alchemyKey}` },
+    ];
+    Promise.all(
+      chains.map(({ name, base }) =>
+        fetch(`${base}/getNFTsForOwner?owner=${primaryWallet.address}&withMetadata=true&pageSize=50`)
+          .then((r) => r.json())
+          .then((data) => (data.ownedNfts ?? []).map((nft: any) => ({
+            tokenId: nft.tokenId,
+            name: nft.name ?? nft.contract?.name ?? "Unnamed NFT",
+            image: ipfsToHttp(nft.image?.cachedUrl ?? nft.image?.originalUrl ?? null),
+            collection: nft.contract?.name ?? "Unknown Collection",
+            chain: name,
+          })))
+          .catch(() => [] as EthNFT[])
+      )
+    ).then((results) => { setEthNFTs(results.flat()); setEthLoading(false); })
+     .catch(() => { setEthError("Could not load Ethereum NFTs."); setEthLoading(false); });
+  }, [primaryWallet?.address, alchemyKey]);
+
+  useEffect(() => {
+    if (!connected || !wallet || !blockfrostKey) return;
+    setCardanoLoading(true);
+    setCardanoError(null);
+    wallet.getChangeAddress().then(async (rawAddress) => {
+      let address = rawAddress;
+      if (!rawAddress.startsWith("addr")) {
+        const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
+        address = Address.from_bytes(Buffer.from(rawAddress, "hex")).to_bech32();
+      }
+      const res = await fetch(`https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}/utxos`, {
+        headers: { project_id: blockfrostKey },
+      });
+      const utxos = await res.json();
+      const assetMap = new Map<string, number>();
+      for (const utxo of utxos) {
+        for (const amount of utxo.amount ?? []) {
+          if (amount.unit !== "lovelace") {
+            assetMap.set(amount.unit, (assetMap.get(amount.unit) ?? 0) + Number(amount.quantity));
+          }
+        }
+      }
+      const nfts: CardanoNFT[] = await Promise.all(
+        Array.from(assetMap.entries()).map(async ([unit, qty]) => {
+          try {
+            const metaRes = await fetch(`https://cardano-mainnet.blockfrost.io/api/v0/assets/${unit}`, {
+              headers: { project_id: blockfrostKey },
+            });
+            const meta = await metaRes.json();
+            const onchain = meta.onchain_metadata ?? {};
+            const rawImage = onchain.image ?? meta.metadata?.image ?? null;
+            const imageUrl = Array.isArray(rawImage) ? rawImage.join("") : rawImage;
+            return { asset: unit, name: onchain.name ?? meta.asset_name ?? unit.slice(0, 16), image: ipfsToHttp(imageUrl), quantity: String(qty) };
+          } catch {
+            return { asset: unit, name: unit.slice(0, 16), image: null, quantity: String(qty) };
+          }
+        })
+      );
+      setCardanoNFTs(nfts);
+      setCardanoLoading(false);
+    }).catch(() => { setCardanoError("Could not load Cardano NFTs."); setCardanoLoading(false); });
+  }, [connected, wallet, blockfrostKey]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", opacity: 0.45, marginBottom: 14 }}>
+          Ethereum / EVM · {ethLoading ? "Loading..." : `${ethNFTs.length} NFTs`}
+        </div>
+        {!primaryWallet?.address ? (
+          <div style={{ fontSize: 13, opacity: 0.3, fontStyle: "italic" }}>Connect your Ethereum wallet to see NFTs.</div>
+        ) : ethError ? (
+          <div style={{ fontSize: 13, color: "rgba(255,100,100,.6)" }}>{ethError}</div>
+        ) : ethLoading ? (
+          <div style={{ fontSize: 13, opacity: 0.3 }}>Fetching from Ethereum, Polygon, Base...</div>
+        ) : ethNFTs.length === 0 ? (
+          <div style={{ fontSize: 13, opacity: 0.3, fontStyle: "italic" }}>No NFTs found on Ethereum, Polygon or Base.</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+            {ethNFTs.map((nft, i) => <NFTCard key={`eth-${i}`} name={nft.name} image={nft.image} subtitle={nft.collection} badge={nft.chain} />)}
+          </div>
+        )}
+      </div>
+
+      <div style={{ height: 1, background: "rgba(255,255,255,.06)" }} />
+
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", opacity: 0.45, marginBottom: 14 }}>
+          Cardano · {cardanoLoading ? "Loading..." : `${cardanoNFTs.length} NFTs`}
+        </div>
+        {!connected ? (
+          <div style={{ fontSize: 13, opacity: 0.3, fontStyle: "italic" }}>Connect your Cardano wallet to see NFTs.</div>
+        ) : cardanoError ? (
+          <div style={{ fontSize: 13, color: "rgba(255,100,100,.6)" }}>{cardanoError}</div>
+        ) : cardanoLoading ? (
+          <div style={{ fontSize: 13, opacity: 0.3 }}>Fetching from Blockfrost...</div>
+        ) : cardanoNFTs.length === 0 ? (
+          <div style={{ fontSize: 13, opacity: 0.3, fontStyle: "italic" }}>No NFTs found in this Cardano wallet.</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+            {cardanoNFTs.map((nft, i) => <NFTCard key={`ada-${i}`} name={nft.name} image={nft.image} subtitle={`Qty: ${nft.quantity}`} badge="Cardano" />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Cardano Wallet Button ──
+function CardanoWalletButton() {
+  const { connect, disconnect, connected, wallet } = useWallet();
+  const availableWallets = useWalletList();
+  const [addr, setAddr] = useState<string | null>(null);
+  const [showList, setShowList] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (connected && wallet) {
-      wallet.getChangeAddress().then((addr) => {
-        setWallets((prev) => ({ ...prev, cardano: addr }));
-      }).catch(() => {
-        setWallets((prev) => ({ ...prev, cardano: null }));
-      });
+      wallet.getChangeAddress().then(async (raw) => {
+        if (!raw.startsWith("addr")) {
+          const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
+          setAddr(Address.from_bytes(Buffer.from(raw, "hex")).to_bech32());
+        } else {
+          setAddr(raw);
+        }
+      }).catch(() => setAddr(null));
     } else {
-      setWallets((prev) => ({ ...prev, cardano: null }));
+      setAddr(null);
     }
   }, [connected, wallet]);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2800);
-  }
-
-  async function connectCardanoWallet(walletKey: string, walletName: string) {
-    setCardanoError(null);
+  async function handleConnect(walletKey: string, walletName: string) {
+    setError(null);
     try {
       await connect(walletKey);
-      const api = await (window as any).cardano[walletKey].enable();
-      const addresses = await api.getUsedAddresses();
-      const hexAddr = addresses[0] ?? await api.getChangeAddress();
-      const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
-      const readable = Address.from_bytes(Buffer.from(hexAddr, "hex")).to_bech32();
-      setWallets((prev) => ({ ...prev, cardano: readable }));
-      showToast(walletName + " linked successfully");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not connect wallet";
-      setCardanoError(msg);
-      showToast("Connection failed");
+      setShowList(false);
+    } catch {
+      setError("Could not connect " + walletName);
     }
   }
 
-  async function disconnectCardano() {
-    await meshDisconnect();
-    setWallets((prev) => ({ ...prev, cardano: null }));
-    showToast("Cardano wallet disconnected");
+  if (connected && addr) {
+    return (
+      <div style={{ position: "relative" }}>
+        <button onClick={() => disconnect()} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+          <CardanoLogo />
+          <span style={{ fontFamily: "monospace" }}>{shortAddr(addr)}</span>
+        </button>
+      </div>
+    );
   }
-
-  async function logout() {
-    await handleLogOut();
-    showToast("Signed out");
-  }
-
-  const hasAny = !!(isLoggedIn || wallets.cardano);
-
-  function ctaNote() {
-    if (isLoggedIn && wallets.cardano) return "All set — social login + Cardano wallet linked!";
-    if (isLoggedIn) return "Ready! You can also link your Cardano wallet.";
-    if (wallets.cardano) return "Cardano linked. You can also sign in socially.";
-    return "Choose at least one option above to continue.";
-  }
-
-  const SUMMARY_ROWS = [
-    { label: "Social / ETH Login", value: isLoggedIn ? (user?.email ?? primaryWallet?.address ?? null) : null },
-    { label: "ETH Wallet (embedded)", value: wallets.eth },
-    { label: "Cardano Address", value: wallets.cardano },
-  ];
-
-  const dot = (on: boolean) => ({
-    width: 7, height: 7, borderRadius: "50%",
-    background: on ? "#4ade80" : "#444",
-    boxShadow: on ? "0 0 6px #4ade80" : "none",
-  } as React.CSSProperties);
 
   return (
-    <main style={{ background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-      <div style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", gap: 20 }}>
-
-        <div style={{ textAlign: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
-          <div style={{ fontSize: 14, opacity: 0.65, marginTop: 6 }}>Sign in with social or connect your wallet</div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 1 – Social Login</div>
-          {isLoggedIn ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👤</div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{user?.email ?? user?.username ?? "Connected"}</div>
-                  <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>ETH: {wallets.eth ? shortAddr(wallets.eth) : "creating..."}</div>
-                </div>
-              </div>
-              <button onClick={logout} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
-                Sign out
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <DynamicWidget />
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
-          <span style={{ fontSize: 11, opacity: .5 }}>or connect a wallet directly</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.08)" }} />
-        </div>
-
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55 }}>Option 2 – Link Wallets</div>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-
-          {/* Midnight Preview Panel */}
-          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, padding: 24, opacity: 0.5, position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.5)", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "3px 9px", borderRadius: 20 }}>Coming Soon</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <MidnightLogo />
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>Midnight (NIGHT)</div>
-                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Privacy chain · ZK-powered</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#444" }} />Not available yet
-            </div>
-            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "rgba(255,255,255,.2)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: "italic" }}>No address linked yet</div>
-            <button disabled style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.2)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>Coming soon</button>
-          </div>
-
-          {/* Cardano Panel */}
-          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: connected ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <CardanoLogo />
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>Cardano (ADA)</div>
-                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Powered by Mesh SDK</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={dot(connected)} />{connected ? "Connected" : "Not connected"}
-            </div>
-            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.cardano ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.cardano ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.cardano ? "normal" : "italic" }}>
-              {wallets.cardano ?? "No address linked yet"}
-            </div>
-            {cardanoError && (
-              <div style={{ fontSize: 11, color: "rgba(255,100,100,.7)", marginBottom: 10, padding: "8px 12px", background: "rgba(255,50,50,.07)", borderRadius: 8, border: "1px solid rgba(255,50,50,.15)" }}>{cardanoError}</div>
-            )}
-            {connected ? (
-              <button onClick={disconnectCardano} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.35)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>Disconnect wallet</button>
-            ) : availableWallets.length === 0 ? (
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", textAlign: "center", padding: "12px 0", fontStyle: "italic" }}>No Cardano wallet detected. Install Eternl, Nami or Lace.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {availableWallets.map((w) => (
-                  <button key={w.id} onClick={() => connectCardanoWallet(w.id, w.name)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "12px 14px", borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={w.icon} width={22} height={22} alt={w.name} style={{ borderRadius: 4, objectFit: "contain" }} />
-                    <span style={{ flex: 1 }}>{w.name}</span>
-                    <span style={{ opacity: .3, fontSize: 12 }}>→</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .55, marginTop: 4 }}>Account Summary</div>
-        <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "20px 28px" }}>
-          {SUMMARY_ROWS.map(({ label, value }) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.06)", fontSize: 13 }}>
-              <span style={{ opacity: .7 }}>{label}</span>
-              <span style={{ fontFamily: value ? "monospace" : "inherit", fontSize: value ? 11 : 12, opacity: value ? .8 : .3, fontStyle: value ? "normal" : "italic" }}>
-                {value ? shortAddr(value) : "Not linked"}
-              </span>
-            </div>
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setShowList(!showList)} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+        <CardanoLogo />
+        Connect Cardano
+      </button>
+      {showList && availableWallets.length > 0 && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#111", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: 8, zIndex: 100, minWidth: 180, display: "flex", flexDirection: "column", gap: 4 }}>
+          {availableWallets.map((w) => (
+            <button key={w.id} onClick={() => handleConnect(w.id, w.name)}
+              style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", color: "#fff", padding: "9px 12px", borderRadius: 8, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={w.icon} width={20} height={20} alt={w.name} style={{ borderRadius: 4 }} />
+              {w.name}
+            </button>
           ))}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", fontSize: 13 }}>
-            <span style={{ opacity: .7 }}>Status</span>
-            <span style={{ background: hasAny ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.04)", color: hasAny ? "#4ade80" : "rgba(255,255,255,.3)", border: hasAny ? "1px solid rgba(74,222,128,.2)" : "1px solid rgba(255,255,255,.08)", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-              {hasAny ? "Ready" : "Incomplete"}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 8, marginBottom: 40 }}>
-          <button
-            disabled={!hasAny}
-            onClick={() => router.push("/dashboard")}
-            style={{ background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: 10, fontSize: 16, fontWeight: 700, fontFamily: "inherit", cursor: hasAny ? "pointer" : "not-allowed", opacity: hasAny ? 1 : .25 }}>
-            Save and Continue
-          </button>
-          <div style={{ fontSize: 12, opacity: .35, marginTop: 10 }}>{ctaNote()}</div>
-        </div>
-
-      </div>
-
-      {toast && (
-        <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: "#1a1a1a", border: "1px solid rgba(255,255,255,.15)", color: "#fff", padding: "11px 20px", borderRadius: 10, fontSize: 13, zIndex: 999, whiteSpace: "nowrap" }}>
-          {toast}
+          {error && <div style={{ fontSize: 11, color: "rgba(255,100,100,.7)", padding: "4px 12px" }}>{error}</div>}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Main App ──
+export default function App() {
+  const [activeTab, setActiveTab] = useState<Tab>("nfts");
+  const { user, primaryWallet, handleLogOut } = useDynamicContext();
+  const isLoggedIn = useIsLoggedIn();
+  const { connected } = useWallet();
+
+  const hasAnyConnection = isLoggedIn || connected;
+
+  return (
+    <main style={{ background: "#000", color: "#fff", minHeight: "100vh", padding: "0 20px" }}>
+
+      {/* Top Nav */}
+      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>Fitnight</div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Midnight – disabled */}
+          <button disabled title="Coming soon" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.25)", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>
+            <MidnightLogo />
+            Midnight
+          </button>
+
+          {/* Cardano – Mesh */}
+          <CardanoWalletButton />
+
+          {/* ETH + Social – Dynamic */}
+          <DynamicWidget />
+        </div>
+      </nav>
+
+      <div style={{ width: "100%", maxWidth: 860, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+
+        {!hasAnyConnection ? (
+          /* Not connected state */
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 16, textAlign: "center" }}>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
+            <div style={{ fontSize: 15, opacity: 0.45, maxWidth: 360 }}>Connect your wallet or sign in with social to get started.</div>
+          </div>
+        ) : (
+          <>
+            {/* Profile strip */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "14px 20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{user?.email ?? user?.username ?? "Fitnight User"}</div>
+                  <div style={{ fontSize: 11, opacity: 0.4, marginTop: 2 }}>
+                    {primaryWallet?.address ? `ETH: ${shortAddr(primaryWallet.address)}` : ""}
+                  </div>
+                </div>
+              </div>
+              {isLoggedIn && (
+                <button onClick={handleLogOut} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.2)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 8, fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>
+                  Sign out
+                </button>
+              )}
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6, overflowX: "auto" }}>
+              {TABS.map(({ key, label, Icon }) => (
+                <button key={key} onClick={() => setActiveTab(key)}
+                  style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s", background: activeTab === key ? "rgba(255,255,255,.08)" : "transparent", border: activeTab === key ? "1px solid rgba(255,255,255,.12)" : "1px solid transparent", color: activeTab === key ? "#fff" : "rgba(255,255,255,.4)" }}>
+                  <Icon />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 28, minHeight: 380 }}>
+              {activeTab === "nfts" && <NFTsTab />}
+              {activeTab === "memberships" && <ComingSoonTab label="My Memberships" />}
+              {activeTab === "buy" && <ComingSoonTab label="Buy Membership" />}
+              {activeTab === "create" && <ComingSoonTab label="Create Membership" />}
+            </div>
+          </>
+        )}
+      </div>
     </main>
   );
 }

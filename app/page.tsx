@@ -70,11 +70,13 @@ export default function LoginPage() {
     setCardanoError(null);
     try {
       await connect(walletKey);
-      // wallet object is not yet updated in state, so we read directly from window.cardano
       const api = await (window as any).cardano[walletKey].enable();
       const addresses = await api.getUsedAddresses();
-      const addr = addresses[0] ?? await api.getChangeAddress();
-      setWallets((prev) => ({ ...prev, cardano: addr }));
+      const hexAddr = addresses[0] ?? await api.getChangeAddress();
+      // Convert hex to readable bech32 addr1... format
+      const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
+      const readable = Address.from_bytes(Buffer.from(hexAddr, "hex")).to_bech32();
+      setWallets((prev) => ({ ...prev, cardano: readable }));
       showToast(walletName + " linked successfully");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not connect wallet";

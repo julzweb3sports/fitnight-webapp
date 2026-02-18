@@ -60,10 +60,8 @@ const MidnightLogo = () => (
 );
 
 const CardanoLogo = () => (
-  <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="16" fill="#0033AD"/>
-    <path d="M16 7a1.2 1.2 0 1 1 0 2.4A1.2 1.2 0 0 1 16 7zm-5.5 2.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM8 14a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm16 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-13.5 4.5a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zm11 0a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM16 22.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z" fill="white" opacity="0.9"/>
-  </svg>
+  // eslint-disable-next-line @next/next/no-img-element
+  <img src="/cardano.png" width={20} height={20} alt="Cardano" style={{ objectFit: "contain", display: "block" }} />
 );
 
 const TABS = [

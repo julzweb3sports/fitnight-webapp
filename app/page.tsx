@@ -1,58 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
-
-interface SocialUser {
-  name: string;
-  handle: string;
-  icon: string;
-}
 
 interface WalletState {
   eth: string | null;
   cardano: string | null;
 }
 
-const FAKE_NAMES: Record<string, string[]> = {
-  google: ["alex.fitnight@gmail.com", "sarah.k@gmail.com"],
-  telegram: ["@fitnight_alex", "@sarah_trains"],
-  x: ["@alexfitnight", "@sarah_k"],
-};
-
-function rand<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
 function shortAddr(addr: string) {
   return addr.slice(0, 8) + "..." + addr.slice(-6);
 }
-
-// ── Social Logos ──
-const GoogleLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-  </svg>
-);
-
-const TelegramLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#229ED9"/>
-    <path d="M17.5 7L5.5 11.5l3.5 1.5 1.5 4.5 2-2.5 3.5 2.5 2-10z" fill="white" opacity="0.9"/>
-    <path d="M9 13l-.5 3.5 2-2.5" fill="white" opacity="0.7"/>
-  </svg>
-);
-
-const XLogo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
 
 // ── Wallet Logos ──
 const MidnightLogo = () => (
@@ -60,8 +19,6 @@ const MidnightLogo = () => (
   <img src="/midnight.png" width={22} height={22} alt="Midnight" style={{ borderRadius: 4, objectFit: "contain", display: "block" }} />
 );
 
-
-// Cardano Logo (inline SVG)
 const CardanoLogo = () => (
   <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="16" fill="#0033AD"/>
@@ -69,38 +26,29 @@ const CardanoLogo = () => (
   </svg>
 );
 
-const SOCIAL_OPTIONS = [
-  { key: "google", label: "Google", Logo: GoogleLogo },
-  { key: "telegram", label: "Telegram", Logo: TelegramLogo },
-  { key: "x", label: "X", Logo: XLogo },
-];
-
-
-
 export default function LoginPage() {
-  const [social, setSocial] = useState<SocialUser | null>(null);
-  const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [wallets, setWallets] = useState<WalletState>({ eth: null, cardano: null });
   const [toast, setToast] = useState<string | null>(null);
   const [cardanoError, setCardanoError] = useState<string | null>(null);
 
-  // Ethereum
-  const { address, isConnected } = useAccount();
+  // Dynamic – Social Login + ETH embedded wallet
+  const { primaryWallet, handleLogOut, user } = useDynamicContext();
+  const isLoggedIn = useIsLoggedIn();
 
   // Cardano via Mesh
   const { connect, disconnect: meshDisconnect, connected, wallet } = useWallet();
   const availableWallets = useWalletList();
 
-  // Sync ETH address
+  // Sync ETH address from Dynamic
   useEffect(() => {
-    if (isConnected && address) {
-      setWallets((prev) => ({ ...prev, eth: address }));
+    if (isLoggedIn && primaryWallet?.address) {
+      setWallets((prev) => ({ ...prev, eth: primaryWallet.address }));
     } else {
       setWallets((prev) => ({ ...prev, eth: null }));
     }
-  }, [isConnected, address]);
+  }, [isLoggedIn, primaryWallet]);
 
-  // Sync Cardano address
+  // Sync Cardano address from Mesh
   useEffect(() => {
     if (connected && wallet) {
       wallet.getChangeAddress().then((addr) => {
@@ -116,20 +64,6 @@ export default function LoginPage() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2800);
-  }
-
-  function socialLogin(name: string, key: string) {
-    setSocialLoading(key);
-    setTimeout(() => {
-      setSocial({ name, handle: rand(FAKE_NAMES[key]), icon: key });
-      setSocialLoading(null);
-      showToast("Signed in with " + name);
-    }, 1200);
-  }
-
-  function socialLogout() {
-    setSocial(null);
-    showToast("Signed out");
   }
 
   async function connectCardanoWallet(walletKey: string, walletName: string) {
@@ -150,21 +84,24 @@ export default function LoginPage() {
     showToast("Cardano wallet disconnected");
   }
 
-  const hasAny = !!(social || wallets.eth || wallets.cardano);
+  async function logout() {
+    await handleLogOut();
+    showToast("Signed out");
+  }
+
+  const hasAny = !!(isLoggedIn || wallets.cardano);
 
   function ctaNote() {
-    const hasWallet = wallets.eth || wallets.cardano;
-    if (social && wallets.eth && wallets.cardano) return "All set — social login + both wallets linked!";
-    if (social && hasWallet) return "Ready! You can also link the other wallet.";
-    if (social) return "Signed in via social. You can also link a wallet.";
-    if (hasWallet) return "Wallet linked. You can also sign in socially.";
+    if (isLoggedIn && wallets.cardano) return "All set — social login + Cardano wallet linked!";
+    if (isLoggedIn) return "Ready! You can also link your Cardano wallet.";
+    if (wallets.cardano) return "Cardano linked. You can also sign in socially.";
     return "Choose at least one option above to continue.";
   }
 
   const SUMMARY_ROWS = [
-    { label: "Social Login", value: social?.handle ?? null },
+    { label: "Social / ETH Login", value: isLoggedIn ? (user?.email ?? primaryWallet?.address ?? null) : null },
+    { label: "ETH Wallet (embedded)", value: wallets.eth },
     { label: "Cardano Address", value: wallets.cardano },
-    { label: "Ethereum Address", value: wallets.eth },
   ];
 
   const dot = (on: boolean) => ({
@@ -183,34 +120,31 @@ export default function LoginPage() {
           <div style={{ fontSize: 14, opacity: 0.4, marginTop: 6 }}>Sign in with social or connect your wallet</div>
         </div>
 
-        {/* Option 1 – Social */}
+        {/* Option 1 – Social Login via Dynamic */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", opacity: .35 }}>Option 1 – Social Login</div>
 
-          {social ? (
+          {isLoggedIn ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {social.icon === "google" ? <GoogleLogo /> : social.icon === "telegram" ? <TelegramLogo /> : <XLogo />}
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                  👤
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{social.handle}</div>
-                  <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>via {social.name}</div>
+                  <div style={{ fontWeight: 600 }}>{user?.email ?? user?.username ?? "Connected"}</div>
+                  <div style={{ fontSize: 11, opacity: .4, marginTop: 1 }}>
+                    ETH: {wallets.eth ? shortAddr(wallets.eth) : "creating..."}
+                  </div>
                 </div>
               </div>
-              <button onClick={socialLogout} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
+              <button onClick={logout} style={{ background: "transparent", border: "1px solid rgba(255,100,100,.25)", color: "rgba(255,100,100,.6)", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
                 Sign out
               </button>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-              {SOCIAL_OPTIONS.map(({ key, label, Logo }) => (
-                <button key={key} onClick={() => socialLogin(label, key)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#fff", padding: "18px 12px", borderRadius: 12, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer" }}>
-                  <Logo />
-                  {socialLoading === key ? "Connecting..." : label}
-                </button>
-              ))}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {/* DynamicWidget zeigt Google, X, Email, externe Wallets – alles in einem */}
+              <DynamicWidget />
             </div>
           )}
         </div>
@@ -227,11 +161,9 @@ export default function LoginPage() {
 
           {/* Midnight Preview Panel */}
           <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, padding: 24, opacity: 0.5, position: "relative", overflow: "hidden" }}>
-            {/* Coming Soon Badge */}
             <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.5)", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "3px 9px", borderRadius: 20 }}>
               Coming Soon
             </div>
-
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <MidnightLogo />
               <div>
@@ -239,16 +171,13 @@ export default function LoginPage() {
                 <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Privacy chain · ZK-powered</div>
               </div>
             </div>
-
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#444" }} />
               Not available yet
             </div>
-
             <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "rgba(255,255,255,.2)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: "italic" }}>
               No address linked yet
             </div>
-
             <button disabled style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.2)", padding: 9, borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>
               Coming soon
             </button>
@@ -263,12 +192,10 @@ export default function LoginPage() {
                 <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>Powered by Mesh SDK</div>
               </div>
             </div>
-
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
               <div style={dot(connected)} />
               {connected ? "Connected" : "Not connected"}
             </div>
-
             <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.cardano ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.cardano ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.cardano ? "normal" : "italic" }}>
               {wallets.cardano ?? "No address linked yet"}
             </div>
@@ -300,38 +227,6 @@ export default function LoginPage() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Ethereum Panel – RainbowKit */}
-          <div style={{ flex: 1, minWidth: 280, background: "#0d0d0d", border: wallets.eth ? "1px solid rgba(255,255,255,.35)" : "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="16" fill="#627EEA"/>
-                <path d="M16 5v8.5l7 3.1L16 5z" fill="white" opacity="0.6"/>
-                <path d="M16 5L9 16.6l7-3.1V5z" fill="white"/>
-                <path d="M16 21.8v5.2l7-9.7-7 4.5z" fill="white" opacity="0.6"/>
-                <path d="M16 27v-5.2l-7-4.5L16 27z" fill="white"/>
-                <path d="M16 20.6l7-4.1-7-3.1v7.2z" fill="white" opacity="0.6"/>
-                <path d="M9 16.5l7 4.1v-7.2L9 16.5z" fill="white" opacity="0.2"/>
-              </svg>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>Ethereum</div>
-                <div style={{ fontSize: 12, opacity: .45, marginTop: 2 }}>EVM-compatible · 50+ Wallets</div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", borderRadius: 8, background: "rgba(255,255,255,.04)", fontSize: 13, marginBottom: 14 }}>
-              <div style={dot(!!wallets.eth)} />
-              {wallets.eth ? "Connected" : "Not connected"}
-            </div>
-
-            <div style={{ background: "#000", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontFamily: wallets.eth ? "monospace" : "inherit", wordBreak: "break-all", color: wallets.eth ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.25)", minHeight: 42, display: "flex", alignItems: "center", marginBottom: 14, fontStyle: wallets.eth ? "normal" : "italic" }}>
-              {wallets.eth ? shortAddr(wallets.eth) : "No address linked yet"}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <ConnectButton showBalance={false} chainStatus="none" />
-            </div>
           </div>
 
         </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
 
-type Tab = "nfts" | "memberships" | "buy" | "create";
+type Tab = "nfts" | "holder" | "memberships" | "buy" | "create";
 
 interface EthNFT {
   tokenId: string;
@@ -38,6 +38,12 @@ const IconNFT = () => (
     <rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/>
   </svg>
 );
+
+const IconHolder = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
 const IconMembership = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
@@ -66,6 +72,7 @@ const CardanoLogo = () => (
 
 const TABS = [
   { key: "nfts" as Tab, label: "My NFTs", Icon: IconNFT },
+  { key: "holder" as Tab, label: "Holder Portal", Icon: IconHolder },
   { key: "memberships" as Tab, label: "My Memberships", Icon: IconMembership },
   { key: "buy" as Tab, label: "Buy Membership", Icon: IconBuy },
   { key: "create" as Tab, label: "Create Membership", Icon: IconCreate },
@@ -100,6 +107,101 @@ function NFTCard({ name, image, subtitle, badge }: { name: string; image: string
       <div style={{ padding: "12px 14px" }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name || "Unnamed NFT"}</div>
         <div style={{ fontSize: 11, opacity: 0.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Token Gate Config ──
+const ETH_GATE_CONTRACT = "0x223c97c62B7263aa53E581Ab827565290f5c3149";
+// Add Cardano Policy ID here later:
+// const CARDANO_GATE_POLICY = "your_policy_id_here";
+
+// ── Holder Portal Tab ──
+function HolderPortalTab() {
+  const { primaryWallet } = useDynamicContext();
+  const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  const [access, setAccess] = useState<"loading" | "granted" | "denied" | "no-wallet">("no-wallet");
+
+  useEffect(() => {
+    if (!primaryWallet?.address || !alchemyKey) {
+      setAccess("no-wallet");
+      return;
+    }
+    setAccess("loading");
+    fetch(`https://eth-mainnet.g.alchemy.com/nft/v3/${alchemyKey}/isHolderOfContract?wallet=${primaryWallet.address}&contractAddress=${ETH_GATE_CONTRACT}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setAccess(data.isHolderOfContract ? "granted" : "denied");
+      })
+      .catch(() => setAccess("denied"));
+  }, [primaryWallet?.address, alchemyKey]);
+
+  if (access === "no-wallet") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 40 }}>🔐</div>
+        <div style={{ fontSize: 17, fontWeight: 600 }}>Holder Portal</div>
+        <div style={{ fontSize: 13, opacity: 0.4, maxWidth: 300 }}>Connect your Ethereum wallet to check access.</div>
+      </div>
+    );
+  }
+
+  if (access === "loading") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 14 }}>
+        <div style={{ fontSize: 40 }}>⏳</div>
+        <div style={{ fontSize: 14, opacity: 0.4 }}>Verifying holder status...</div>
+      </div>
+    );
+  }
+
+  if (access === "denied") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 40 }}>🚫</div>
+        <div style={{ fontSize: 17, fontWeight: 600 }}>Access Denied</div>
+        <div style={{ fontSize: 13, opacity: 0.45, maxWidth: 320 }}>
+          This area is exclusive to holders of the Fitnight NFT collection.
+          You need at least one NFT from the collection to access this content.
+        </div>
+        <a href="https://opensea.io/collection/" target="_blank" rel="noopener noreferrer"
+          style={{ marginTop: 8, background: "#fff", color: "#000", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+          Get a Fitnight NFT →
+        </a>
+      </div>
+    );
+  }
+
+  // access === "granted"
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✓</div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>Welcome, Holder!</div>
+          <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · Fitnight NFT verified</div>
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: "rgba(255,255,255,.06)" }} />
+
+      {/* Exclusive content placeholder */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+        {[
+          { emoji: "🎯", title: "Exclusive Drops", desc: "Early access to new Fitnight NFT drops" },
+          { emoji: "💎", title: "Member Benefits", desc: "Special discounts on gym memberships" },
+          { emoji: "📊", title: "Holder Analytics", desc: "Floor price, rarity and portfolio stats" },
+          { emoji: "🗳️", title: "Governance", desc: "Vote on future Fitnight features" },
+        ].map(({ emoji, title, desc }) => (
+          <div key={title} style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px" }}>
+            <div style={{ fontSize: 28, marginBottom: 10 }}>{emoji}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{title}</div>
+            <div style={{ fontSize: 12, opacity: 0.4 }}>{desc}</div>
+            <div style={{ marginTop: 14, fontSize: 11, color: "rgba(255,255,255,.25)", fontStyle: "italic" }}>Coming soon</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -374,6 +476,7 @@ export default function App() {
             {/* Tab Content */}
             <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 28, minHeight: 380 }}>
               {activeTab === "nfts" && <NFTsTab />}
+              {activeTab === "holder" && <HolderPortalTab />}
               {activeTab === "memberships" && <ComingSoonTab label="My Memberships" />}
               {activeTab === "buy" && <ComingSoonTab label="Buy Membership" />}
               {activeTab === "create" && <ComingSoonTab label="Create Membership" />}

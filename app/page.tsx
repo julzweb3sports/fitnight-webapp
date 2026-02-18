@@ -163,10 +163,10 @@ function HolderPortalTab() {
         <div style={{ fontSize: 40 }}>🚫</div>
         <div style={{ fontSize: 17, fontWeight: 600 }}>Access Denied</div>
         <div style={{ fontSize: 13, opacity: 0.45, maxWidth: 320 }}>
-          This area is exclusive to holders of the Fitnight NFT collection.
-          You need at least one NFT from the collection to access this content.
+          This area is exclusive to manifesto holders.
+          You need at least one manifesto NFT to access this content.
         </div>
-        <a href="https://opensea.io/collection/" target="_blank" rel="noopener noreferrer"
+        <a href="https://opensea.io/collection/fitnight-manifesto" target="_blank" rel="noopener noreferrer"
           style={{ marginTop: 8, background: "#fff", color: "#000", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
           Get a Fitnight NFT →
         </a>
@@ -181,7 +181,7 @@ function HolderPortalTab() {
         <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✓</div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>Welcome, Holder!</div>
-          <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · Fitnight NFT verified</div>
+          <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · manifesto NFT verified</div>
         </div>
       </div>
 
@@ -190,8 +190,8 @@ function HolderPortalTab() {
       {/* Exclusive content placeholder */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
         {[
-          { emoji: "🎯", title: "Exclusive Drops", desc: "Early access to new Fitnight NFT drops" },
-          { emoji: "💎", title: "Member Benefits", desc: "Special discounts on gym memberships" },
+          { emoji: "📜", title: "View manifesto", desc: "Join our movement." },
+          { emoji: "🌙", title: "Coming soon", desc: "midnight integration, global memberships, partner benefits & more!" },
           { emoji: "📊", title: "Holder Analytics", desc: "Floor price, rarity and portfolio stats" },
           { emoji: "🗳️", title: "Governance", desc: "Vote on future Fitnight features" },
         ].map(({ emoji, title, desc }) => (
@@ -406,7 +406,7 @@ function CardanoWalletButton() {
 // ── Main App ──
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("nfts");
-  const { user, primaryWallet, handleLogOut } = useDynamicContext();
+  const { user, primaryWallet, handleLogOut, setShowAuthFlow } = useDynamicContext();
   const isLoggedIn = useIsLoggedIn();
   const { connected } = useWallet();
 
@@ -417,7 +417,7 @@ export default function App() {
 
       {/* Top Nav */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>Fitnight</div>
+        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Midnight – disabled */}
@@ -430,7 +430,14 @@ export default function App() {
           <CardanoWalletButton />
 
           {/* ETH + Social – Dynamic */}
-          <DynamicWidget />
+          {isLoggedIn ? (
+            <DynamicWidget />
+          ) : (
+            <button onClick={() => setShowAuthFlow(true)}
+              style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", color: "#000", border: "none", padding: "8px 18px", borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+              Wallet and Social Login
+            </button>
+          )}
         </div>
       </nav>
 
@@ -439,7 +446,7 @@ export default function App() {
         {!hasAnyConnection ? (
           /* Not connected state */
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to Fitnight</div>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to fitnight</div>
             <div style={{ fontSize: 15, opacity: 0.45, maxWidth: 360 }}>Connect your wallet or sign in with social to get started.</div>
           </div>
         ) : (

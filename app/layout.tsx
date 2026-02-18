@@ -9,7 +9,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Fitnight App",
+  title: "fitnight dapp",
   description: "Connect your wallet or create your Fitnight account",
 };
 

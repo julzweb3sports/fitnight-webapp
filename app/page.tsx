@@ -113,6 +113,28 @@ function NFTCard({ name, image, subtitle, badge }: { name: string; image: string
 }
 
 
+// ── Copy Button ──
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,.3)", fontStyle: "italic" }}>
+        {text.slice(0, 10)}...{text.slice(-6)}
+      </span>
+      <button onClick={copy}
+        style={{ background: copied ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.05)", border: `1px solid ${copied ? "rgba(74,222,128,.25)" : "rgba(255,255,255,.1)"}`, color: copied ? "rgba(74,222,128,.8)" : "rgba(255,255,255,.35)", padding: "3px 10px", borderRadius: 6, fontSize: 11, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}>
+        {copied ? "✓ Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
 // ── Username Editor ──
 function UsernameEditor() {
   const { user } = useDynamicContext();
@@ -288,9 +310,7 @@ function HolderPortalTab() {
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
                 </div>
-                <div style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,.3)", fontStyle: "italic", userSelect: "all" }}>
-                  {id}
-                </div>
+                <CopyButton text={id} />
               </div>
             ))}
           </div>
@@ -342,9 +362,9 @@ function HolderPortalTab() {
 
         {/* Manifesto – clickable link */}
         <a href="https://www.fitnight.xyz/assets/manifesto%20final.pdf" target="_blank" rel="noopener noreferrer"
-          style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px", textDecoration: "none", color: "#fff", display: "block", transition: "border-color 0.15s", cursor: "pointer" }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.25)")}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.08)")}>
+          style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.5)", borderRadius: 14, padding: "20px 18px", textDecoration: "none", color: "#fff", display: "block", transition: "border-color 0.15s, box-shadow 0.15s", cursor: "pointer", boxShadow: "0 0 0 1px rgba(255,255,255,.08)" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.9)"; e.currentTarget.style.boxShadow = "0 0 16px rgba(255,255,255,.08)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.5)"; e.currentTarget.style.boxShadow = "0 0 0 1px rgba(255,255,255,.08)"; }}>
           <div style={{ fontSize: 28, marginBottom: 10 }}>📜</div>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>View manifesto</div>
           <div style={{ fontSize: 12, opacity: 0.4 }}>Join our movement.</div>
@@ -581,7 +601,13 @@ export default function App() {
 
       {/* Top Nav */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
+          <a href="https://www.fitnight.xyz/" target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.45)", padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap" }}>
+            ← Website
+          </a>
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Midnight – disabled */}

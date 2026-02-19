@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
 
-type Tab = "nfts" | "holder" | "memberships" | "buy" | "create";
+type Tab = "nfts" | "holder" | "gyms" | "memberships" | "buy" | "create";
 
 interface EthNFT {
   tokenId: string;
@@ -44,6 +44,12 @@ const IconHolder = () => (
     <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
   </svg>
 );
+const IconGyms = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
+  </svg>
+);
+
 const IconMembership = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
@@ -73,6 +79,7 @@ const CardanoLogo = () => (
 const TABS = [
   { key: "nfts" as Tab, label: "My NFTs", Icon: IconNFT },
   { key: "holder" as Tab, label: "Holder Portal", Icon: IconHolder },
+  { key: "gyms" as Tab, label: "Partner Gyms", Icon: IconGyms },
   { key: "memberships" as Tab, label: "My Memberships", Icon: IconMembership },
   { key: "buy" as Tab, label: "Buy Membership", Icon: IconBuy },
   { key: "create" as Tab, label: "Create Membership", Icon: IconCreate },
@@ -391,6 +398,52 @@ function HolderPortalTab() {
   );
 }
 
+// ── Partner Gyms Tab ──
+function PartnerGymsTab() {
+  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>Partner Gyms</div>
+          <div style={{ fontSize: 12, opacity: 0.4, marginTop: 3 }}>fitnight partner locations worldwide</div>
+        </div>
+        <div style={{ background: "rgba(255,200,50,.08)", border: "1px solid rgba(255,200,50,.2)", color: "rgba(255,200,50,.8)", fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 20 }}>
+          Currently acquiring
+        </div>
+      </div>
+
+      {/* Map */}
+      <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,.08)", position: "relative" }}>
+        {mapsKey ? (
+          <iframe
+            title="Partner Gyms Map"
+            width="100%"
+            height="420"
+            style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }}
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=48.8566,2.3522&zoom=3`}
+          />
+        ) : (
+          <div style={{ height: 420, display: "flex", alignItems: "center", justifyContent: "center", background: "#0d0d0d", fontSize: 13, opacity: 0.3 }}>
+            Map unavailable – check API key
+          </div>
+        )}
+      </div>
+
+      {/* Empty state */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "16px 0", opacity: 0.35, textAlign: "center" }}>
+        <div style={{ fontSize: 28 }}>🏋️</div>
+        <div style={{ fontSize: 13 }}>No partner gyms yet – we're working on it!</div>
+        <div style={{ fontSize: 11 }}>Partner locations will appear on the map once confirmed.</div>
+      </div>
+    </div>
+  );
+}
+
 // ── NFTs Tab ──
 function NFTsTab() {
   const { primaryWallet } = useDynamicContext();
@@ -674,6 +727,7 @@ export default function App() {
             <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 28, minHeight: 380 }}>
               {activeTab === "nfts" && <NFTsTab />}
               {activeTab === "holder" && <HolderPortalTab />}
+              {activeTab === "gyms" && <PartnerGymsTab />}
               {activeTab === "memberships" && <ComingSoonTab label="My Memberships" />}
               {activeTab === "buy" && <ComingSoonTab label="Buy Membership" />}
               {activeTab === "create" && <ComingSoonTab label="Create Membership" />}

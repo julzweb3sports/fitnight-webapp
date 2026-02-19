@@ -176,36 +176,75 @@ function UsernameEditor() {
 }
 
 // ── Token Gate Config ──
-const ETH_GATE_CONTRACT = "0x223c97c62B7263aa53E581Ab827565290f5c3149";
-// Add Cardano Policy ID here later:
-// const CARDANO_GATE_POLICY = "your_policy_id_here";
+const GATE_COLLECTIONS = [
+  { name: "fitnight manifesto", chain: "EVM", id: "0x223c97c62B7263aa53E581Ab827565290f5c3149" },
+  { name: "The Mallard Order", chain: "Cardano", id: "901ba6e9831b078e131a1cc403d6139af21bda255cea6c9f770f4834" },
+];
 
 // ── Holder Portal Tab ──
 function HolderPortalTab() {
   const { primaryWallet, user } = useDynamicContext();
+  const { connected, wallet } = useWallet();
   const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  const blockfrostKey = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY;
   const [access, setAccess] = useState<"loading" | "granted" | "denied" | "no-wallet">("no-wallet");
 
   useEffect(() => {
-    if (!primaryWallet?.address || !alchemyKey) {
+    const hasEthWallet = !!primaryWallet?.address;
+    const hasCardanoWallet = connected && !!wallet;
+
+    if (!hasEthWallet && !hasCardanoWallet) {
       setAccess("no-wallet");
       return;
     }
+
     setAccess("loading");
-    fetch(`https://eth-mainnet.g.alchemy.com/nft/v3/${alchemyKey}/isHolderOfContract?wallet=${primaryWallet.address}&contractAddress=${ETH_GATE_CONTRACT}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setAccess(data.isHolderOfContract ? "granted" : "denied");
-      })
-      .catch(() => setAccess("denied"));
-  }, [primaryWallet?.address, alchemyKey]);
+
+    async function checkAccess() {
+      // Check ETH: fitnight manifesto
+      if (hasEthWallet && alchemyKey) {
+        const res = await fetch(
+          `https://eth-mainnet.g.alchemy.com/nft/v3/${alchemyKey}/isHolderOfContract?wallet=${primaryWallet!.address}&contractAddress=0x223c97c62B7263aa53E581Ab827565290f5c3149`
+        ).then(r => r.json()).catch(() => ({ isHolderOfContract: false }));
+        if (res.isHolderOfContract) return "granted";
+      }
+
+      // Check Cardano: The Mallard Order policy ID
+      if (hasCardanoWallet && blockfrostKey) {
+        try {
+          const rawAddr = await wallet!.getChangeAddress();
+          let address = rawAddr;
+          if (!rawAddr.startsWith("addr")) {
+            const { Address } = await import("@emurgo/cardano-serialization-lib-browser");
+            address = Address.from_bytes(Buffer.from(rawAddr, "hex")).to_bech32();
+          }
+          const utxos = await fetch(
+            `https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}/utxos`,
+            { headers: { project_id: blockfrostKey } }
+          ).then(r => r.json());
+          const policyId = "901ba6e9831b078e131a1cc403d6139af21bda255cea6c9f770f4834";
+          for (const utxo of utxos) {
+            for (const amount of utxo.amount ?? []) {
+              if (amount.unit !== "lovelace" && amount.unit.startsWith(policyId)) {
+                return "granted";
+              }
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      return "denied";
+    }
+
+    checkAccess().then(result => setAccess(result)).catch(() => setAccess("denied"));
+  }, [primaryWallet?.address, connected, wallet, alchemyKey, blockfrostKey]);
 
   if (access === "no-wallet") {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 14, textAlign: "center" }}>
         <div style={{ fontSize: 40 }}>🔐</div>
         <div style={{ fontSize: 17, fontWeight: 600 }}>Holder Portal</div>
-        <div style={{ fontSize: 13, opacity: 0.4, maxWidth: 300 }}>Connect your Ethereum wallet to check access.</div>
+        <div style={{ fontSize: 13, opacity: 0.4, maxWidth: 300 }}>Connect your Ethereum or Cardano wallet to check access.</div>
       </div>
     );
   }
@@ -221,17 +260,41 @@ function HolderPortalTab() {
 
   if (access === "denied") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 40 }}>🚫</div>
-        <div style={{ fontSize: 17, fontWeight: 600 }}>Access Denied</div>
-        <div style={{ fontSize: 13, opacity: 0.45, maxWidth: 320 }}>
-          This area is exclusive to manifesto holders.
-          You need at least one manifesto NFT to access this content.
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto", paddingTop: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 40 }}>🚫</div>
+          <div style={{ fontSize: 17, fontWeight: 600 }}>Access Denied</div>
+          <div style={{ fontSize: 13, opacity: 0.45, maxWidth: 320 }}>
+            This area is exclusive to manifesto holders.
+            You need at least one manifesto NFT to access this content.
+          </div>
+          <a href="https://opensea.io/collection/fitnight-manifesto" target="_blank" rel="noopener noreferrer"
+            style={{ background: "#fff", color: "#000", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+            Get manifesto →
+          </a>
         </div>
-        <a href="https://opensea.io/collection/fitnight-manifesto" target="_blank" rel="noopener noreferrer"
-          style={{ marginTop: 8, background: "#fff", color: "#000", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-          Get a Fitnight NFT →
-        </a>
+
+        {/* Eligible collections */}
+        <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "16px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", opacity: 0.45, marginBottom: 14 }}>
+            Eligible collections (including partners)
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {GATE_COLLECTIONS.map(({ name, chain, id }) => (
+              <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, background: chain === "EVM" ? "rgba(100,150,255,.12)" : "rgba(0,51,173,.2)", color: chain === "EVM" ? "rgba(150,180,255,.8)" : "rgba(100,150,255,.8)", padding: "2px 8px", borderRadius: 20, border: `1px solid ${chain === "EVM" ? "rgba(100,150,255,.2)" : "rgba(0,51,173,.3)"}` }}>
+                    {chain}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
+                </div>
+                <div style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,.3)", fontStyle: "italic", userSelect: "all" }}>
+                  {id}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -244,10 +307,32 @@ function HolderPortalTab() {
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✓</div>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Welcome, {user?.username ? user.username : "Holder"}!</div>
-            <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · manifesto NFT verified</div>
+            <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · eligible NFT verified</div>
           </div>
         </div>
         <UsernameEditor />
+      </div>
+
+      {/* Eligible collections */}
+      <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "16px 20px" }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", opacity: 0.45, marginBottom: 14 }}>
+          Eligible collections (including partners)
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {GATE_COLLECTIONS.map(({ name, chain, id }) => (
+            <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, background: chain === "EVM" ? "rgba(100,150,255,.12)" : "rgba(0,51,173,.2)", color: chain === "EVM" ? "rgba(150,180,255,.8)" : "rgba(100,150,255,.8)", padding: "2px 8px", borderRadius: 20, border: `1px solid ${chain === "EVM" ? "rgba(100,150,255,.2)" : "rgba(0,51,173,.3)"}` }}>
+                  {chain}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
+              </div>
+              <div style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,.3)", fontStyle: "italic", userSelect: "all" }}>
+                {id}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ height: 1, background: "rgba(255,255,255,.06)" }} />

@@ -585,8 +585,8 @@ function MidnightWalletButton() {
   useEffect(() => {
     // Wait for extension to inject window.midnight
     const check = () => {
-      const midnight = (window as any).midnight;
-      if (midnight && Object.keys(midnight).some(k => typeof midnight[k]?.enable === "function")) {
+      const wallet = (window as any).midnight?.mnLace;
+      if (wallet && typeof wallet.enable === "function") {
         setIsAvailable(true);
         return true;
       }
@@ -603,12 +603,8 @@ function MidnightWalletButton() {
     setError(null);
     setLoading(true);
     try {
-      const midnight = (window as any).midnight;
-      if (!midnight) throw new Error("Midnight Lace wallet not found");
-      // Find the first available midnight wallet provider
-      const walletName = Object.keys(midnight).find(k => typeof midnight[k]?.enable === "function");
-      if (!walletName) throw new Error("No Midnight wallet found");
-      const wallet = midnight[walletName];
+      const wallet = (window as any).midnight?.mnLace;
+      if (!wallet) throw new Error("Midnight Lace wallet not found");
       const api = await wallet.enable();
       const state = await api.state();
       const address = state.address ?? state.coinPublicKey ?? state.encryptionPublicKey ?? "Connected";

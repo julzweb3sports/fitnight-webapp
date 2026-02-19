@@ -573,6 +573,77 @@ function NFTsTab() {
   );
 }
 
+// ── Midnight Wallet Button ──
+function MidnightWalletButton() {
+  const [connected, setConnected] = useState(false);
+  const [addr, setAddr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const isAvailable = typeof window !== "undefined" && !!(window as any).midnight?.mnLace;
+
+  async function connect() {
+    setError(null);
+    setLoading(true);
+    try {
+      const wallet = (window as any).midnight?.mnLace;
+      if (!wallet) throw new Error("Midnight Lace wallet not found");
+      const api = await wallet.enable();
+      const state = await api.state();
+      // Address is in state.address (Bech32m format)
+      const address = state.address ?? state.coinPublicKey ?? "Connected";
+      setAddr(address);
+      setConnected(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Connection failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function disconnect() {
+    setConnected(false);
+    setAddr(null);
+  }
+
+  if (!isAvailable) {
+    return (
+      <a href="https://chromewebstore.google.com/detail/lace-beta/hgeekaiplokcnmakghbdfbgnlfheichg"
+        target="_blank" rel="noopener noreferrer"
+        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.25)", padding: "8px 14px", borderRadius: 10, fontSize: 12, textDecoration: "none", whiteSpace: "nowrap" }}
+        title="Install Lace Midnight wallet">
+        <MidnightLogo />
+        Install Midnight
+      </a>
+    );
+  }
+
+  if (connected && addr) {
+    return (
+      <button onClick={disconnect}
+        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+        <MidnightLogo />
+        <span style={{ fontFamily: "monospace" }}>{shortAddr(addr)}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={connect} disabled={loading}
+        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+        <MidnightLogo />
+        {loading ? "Connecting..." : "Connect Midnight"}
+      </button>
+      {error && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#111", border: "1px solid rgba(255,100,100,.2)", color: "rgba(255,100,100,.7)", padding: "8px 12px", borderRadius: 8, fontSize: 11, whiteSpace: "nowrap", zIndex: 100 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Cardano Wallet Button ──
 function CardanoWalletButton() {
   const { connect, disconnect, connected, wallet } = useWallet();
@@ -663,11 +734,8 @@ export default function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Midnight – disabled */}
-          <button disabled title="Coming soon" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.25)", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "not-allowed" }}>
-            <MidnightLogo />
-            Midnight
-          </button>
+          {/* Midnight – Lace Devnet */}
+          <MidnightWalletButton />
 
           {/* Cardano – Mesh */}
           <CardanoWalletButton />
@@ -713,7 +781,7 @@ export default function App() {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6, overflowX: "auto" }}>
+            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6 }}>
               {TABS.map(({ key, label, Icon }) => (
                 <button key={key} onClick={() => setActiveTab(key)}
                   style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s", background: activeTab === key ? "rgba(255,255,255,.08)" : "transparent", border: activeTab === key ? "1px solid rgba(255,255,255,.12)" : "1px solid transparent", color: activeTab === key ? "#fff" : "rgba(255,255,255,.4)" }}>

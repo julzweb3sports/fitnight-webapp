@@ -580,7 +580,24 @@ function MidnightWalletButton() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const isAvailable = typeof window !== "undefined" && !!(window as any).midnight && Object.keys((window as any).midnight).some(k => typeof (window as any).midnight[k]?.enable === "function");
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  useEffect(() => {
+    // Wait for extension to inject window.midnight
+    const check = () => {
+      const midnight = (window as any).midnight;
+      if (midnight && Object.keys(midnight).some(k => typeof midnight[k]?.enable === "function")) {
+        setIsAvailable(true);
+        return true;
+      }
+      return false;
+    };
+    if (!check()) {
+      // Retry a few times – extension may inject slightly after page load
+      const intervals = [500, 1000, 2000, 3000];
+      intervals.forEach(ms => setTimeout(check, ms));
+    }
+  }, []);
 
   async function connect() {
     setError(null);

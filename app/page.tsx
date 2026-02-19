@@ -575,7 +575,7 @@ function NFTsTab() {
 }
 
 // ── Midnight Wallet Button ──
-function MidnightWalletButton() {
+function MidnightWalletButton({ compact = false }: { compact?: boolean }) {
   const [connected, setConnected] = useState(false);
   const [addr, setAddr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -603,9 +603,9 @@ function MidnightWalletButton() {
   if (connected && addr) {
     return (
       <button onClick={disconnect}
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+        style={{ display: "flex", alignItems: "center", gap: compact ? 0 : 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: compact ? "7px 10px" : "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
         <MidnightLogo />
-        <span style={{ fontSize: 11 }}>Preview · Connected</span>
+        {!compact && <span style={{ fontSize: 11 }}>Preview · Connected</span>}
       </button>
     );
   }
@@ -613,9 +613,9 @@ function MidnightWalletButton() {
   return (
     <div style={{ position: "relative" }}>
       <button onClick={connect} disabled={loading}
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+        style={{ display: "flex", alignItems: "center", gap: compact ? 0 : 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: compact ? "7px 10px" : "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
         <MidnightLogo />
-        {loading ? "Connecting..." : "Connect Midnight"}
+        {!compact && (loading ? "Connecting..." : "Connect Midnight")}
       </button>
       {error && (
         <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#111", border: "1px solid rgba(255,100,100,.2)", color: "rgba(255,100,100,.7)", padding: "8px 12px", borderRadius: 8, fontSize: 11, whiteSpace: "nowrap", zIndex: 100 }}>
@@ -627,7 +627,7 @@ function MidnightWalletButton() {
 }
 
 // ── Cardano Wallet Button ──
-function CardanoWalletButton() {
+function CardanoWalletButton({ compact = false }: { compact?: boolean }) {
   const { connect, disconnect, connected, wallet } = useWallet();
   const availableWallets = useWalletList();
   const [addr, setAddr] = useState<string | null>(null);
@@ -662,9 +662,9 @@ function CardanoWalletButton() {
   if (connected && addr) {
     return (
       <div style={{ position: "relative" }}>
-        <button onClick={() => disconnect()} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+        <button onClick={() => disconnect()} style={{ display: "flex", alignItems: "center", gap: compact ? 0 : 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: compact ? "7px 10px" : "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
           <CardanoLogo />
-          <span style={{ fontSize: 11 }}>Preview · Connected</span>
+          {!compact && <span style={{ fontSize: 11 }}>Preview · Connected</span>}
         </button>
       </div>
     );
@@ -672,9 +672,9 @@ function CardanoWalletButton() {
 
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => setShowList(!showList)} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+      <button onClick={() => setShowList(!showList)} style={{ display: "flex", alignItems: "center", gap: compact ? 0 : 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: compact ? "7px 10px" : "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
         <CardanoLogo />
-        Connect Cardano
+        {!compact && "Connect Cardano"}
       </button>
       {showList && availableWallets.length > 0 && (
         <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#111", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: 8, zIndex: 100, minWidth: 180, display: "flex", flexDirection: "column", gap: 4 }}>

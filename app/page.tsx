@@ -585,7 +585,7 @@ function MidnightWalletButton() {
     setError(null);
     setLoading(true);
     try {
-      const api = await (window as any).midnight.mnLace.enable();
+      const api = await (window as any).midnight.mnLace.connect();
       if (api) {
         setConnected(true);
         const state = await api.state();
@@ -609,7 +609,7 @@ function MidnightWalletButton() {
       <button onClick={disconnect}
         style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
         <MidnightLogo />
-        <span style={{ fontFamily: "monospace" }}>{shortAddr(addr)}</span>
+        <span style={{ fontSize: 11 }}>Preview · Connected</span>
       </button>
     );
   }
@@ -668,7 +668,7 @@ function CardanoWalletButton() {
       <div style={{ position: "relative" }}>
         <button onClick={() => disconnect()} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
           <CardanoLogo />
-          <span style={{ fontFamily: "monospace" }}>{shortAddr(addr)}</span>
+          <span style={{ fontSize: 11 }}>Preview · Connected</span>
         </button>
       </div>
     );

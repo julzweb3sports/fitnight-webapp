@@ -664,7 +664,7 @@ function CardanoWalletButton() {
       <div style={{ position: "relative" }}>
         <button onClick={() => disconnect()} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#fff", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
           <CardanoLogo />
-          <span style={{ fontSize: 11 }}>Preview · Connected</span>
+          <span style={{ fontFamily: "monospace" }}>{shortAddr(addr)}</span>
         </button>
       </div>
     );

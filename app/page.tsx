@@ -113,6 +113,68 @@ function NFTCard({ name, image, subtitle, badge }: { name: string; image: string
 }
 
 
+// ── Username Editor ──
+function UsernameEditor() {
+  const { user } = useDynamicContext();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(user?.username ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setValue(user?.username ?? "");
+  }, [user?.username]);
+
+  async function save() {
+    if (!value.trim()) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/update-username`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: value.trim(), userId: user?.userId }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && save()}
+          autoFocus
+          placeholder="Username"
+          style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,.2)", color: "#fff", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", width: 150 }}
+        />
+        <button onClick={save} disabled={saving}
+          style={{ background: "#fff", color: "#000", border: "none", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>
+          {saving ? "..." : "Save"}
+        </button>
+        <button onClick={() => setEditing(false)}
+          style={{ background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.4)", padding: "6px 10px", borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setEditing(true)}
+      style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.4)", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+      ✏️ {saved ? "Saved!" : "Edit username"}
+    </button>
+  );
+}
+
 // ── Token Gate Config ──
 const ETH_GATE_CONTRACT = "0x223c97c62B7263aa53E581Ab827565290f5c3149";
 // Add Cardano Policy ID here later:
@@ -120,7 +182,7 @@ const ETH_GATE_CONTRACT = "0x223c97c62B7263aa53E581Ab827565290f5c3149";
 
 // ── Holder Portal Tab ──
 function HolderPortalTab() {
-  const { primaryWallet } = useDynamicContext();
+  const { primaryWallet, user } = useDynamicContext();
   const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
   const [access, setAccess] = useState<"loading" | "granted" | "denied" | "no-wallet">("no-wallet");
 
@@ -177,31 +239,48 @@ function HolderPortalTab() {
   // access === "granted"
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✓</div>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>Welcome, Holder!</div>
-          <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · manifesto NFT verified</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>✓</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Welcome, {user?.username ? user.username : "Holder"}!</div>
+            <div style={{ fontSize: 12, color: "rgba(74,222,128,.8)", marginTop: 2 }}>Access granted · manifesto NFT verified</div>
+          </div>
         </div>
+        <UsernameEditor />
       </div>
 
       <div style={{ height: 1, background: "rgba(255,255,255,.06)" }} />
 
-      {/* Exclusive content placeholder */}
+      {/* Exclusive content */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-        {[
-          { emoji: "📜", title: "View manifesto", desc: "Join our movement." },
-          { emoji: "🌙", title: "Coming soon", desc: "midnight integration, global memberships, partner benefits & more!" },
-          { emoji: "📊", title: "Holder Analytics", desc: "Floor price, rarity and portfolio stats" },
-          { emoji: "🗳️", title: "Governance", desc: "Vote on future Fitnight features" },
-        ].map(({ emoji, title, desc }) => (
-          <div key={title} style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px" }}>
-            <div style={{ fontSize: 28, marginBottom: 10 }}>{emoji}</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{title}</div>
-            <div style={{ fontSize: 12, opacity: 0.4 }}>{desc}</div>
-            <div style={{ marginTop: 14, fontSize: 11, color: "rgba(255,255,255,.25)", fontStyle: "italic" }}>Coming soon</div>
-          </div>
-        ))}
+
+        {/* Manifesto – clickable link */}
+        <a href="https://www.fitnight.xyz/assets/manifesto%20final.pdf" target="_blank" rel="noopener noreferrer"
+          style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px", textDecoration: "none", color: "#fff", display: "block", transition: "border-color 0.15s", cursor: "pointer" }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.25)")}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.08)")}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}>📜</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>View manifesto</div>
+          <div style={{ fontSize: 12, opacity: 0.4 }}>Join our movement.</div>
+          <div style={{ marginTop: 14, fontSize: 11, color: "rgba(255,255,255,.35)" }}>Read now →</div>
+        </a>
+
+        {/* Coming soon */}
+        <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px" }}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}>🌙</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Coming soon</div>
+          <div style={{ fontSize: 12, opacity: 0.4 }}>midnight integration, global memberships, partner benefits & more!</div>
+        </div>
+
+        {/* Governance */}
+        <div style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px 18px" }}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}>🗳️</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Governance</div>
+          <div style={{ fontSize: 12, opacity: 0.4 }}>Vote on future fitnight features.</div>
+          <div style={{ marginTop: 14, fontSize: 11, color: "rgba(255,255,255,.25)", fontStyle: "italic" }}>Coming soon</div>
+        </div>
+
       </div>
     </div>
   );

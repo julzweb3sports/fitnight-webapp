@@ -699,17 +699,23 @@ export default function App() {
   const { user, primaryWallet, handleLogOut, setShowAuthFlow } = useDynamicContext();
   const isLoggedIn = useIsLoggedIn();
   const { connected } = useWallet();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const hasAnyConnection = isLoggedIn || connected;
 
   return (
-    <main style={{ background: "#000", color: "#fff", minHeight: "100vh", padding: "0 20px" }}>
+    <main style={{ background: "#000", color: "#fff", minHeight: "100vh", padding: isMobile ? "0 12px" : "0 20px" }}>
 
       {/* Top Nav */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="fitnight" style={{ height: 30, width: 30, objectFit: "contain", display: "block" }} /> 
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
           <a href="https://www.fitnight.xyz/" target="_blank" rel="noopener noreferrer"
             style={{ display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.45)", padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap" }}>
@@ -765,18 +771,18 @@ export default function App() {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6 }}>
+            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6, overflowX: isMobile ? "auto" : "visible" }}>
               {TABS.map(({ key, label, Icon }) => (
-                <button key={key} onClick={() => setActiveTab(key)}
-                  style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s", background: activeTab === key ? "rgba(255,255,255,.08)" : "transparent", border: activeTab === key ? "1px solid rgba(255,255,255,.12)" : "1px solid transparent", color: activeTab === key ? "#fff" : "rgba(255,255,255,.4)" }}>
+                <button key={key} onClick={() => setActiveTab(key)} title={label}
+                  style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 7, padding: isMobile ? "9px 12px" : "9px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s", flexShrink: 0, background: activeTab === key ? "rgba(255,255,255,.08)" : "transparent", border: activeTab === key ? "1px solid rgba(255,255,255,.12)" : "1px solid transparent", color: activeTab === key ? "#fff" : "rgba(255,255,255,.4)" }}>
                   <Icon />
-                  {label}
+                  {!isMobile && label}
                 </button>
               ))}
             </div>
 
             {/* Tab Content */}
-            <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: 28, minHeight: 380 }}>
+            <div style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: isMobile ? 16 : 28, minHeight: 380 }}>
               {activeTab === "nfts" && <NFTsTab />}
               {activeTab === "holder" && <HolderPortalTab />}
               {activeTab === "gyms" && <PartnerGymsTab />}

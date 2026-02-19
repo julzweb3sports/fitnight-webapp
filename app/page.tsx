@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type {} from "@midnight-ntwrk/dapp-connector-api";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
 
@@ -580,36 +581,17 @@ function MidnightWalletButton() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [isAvailable, setIsAvailable] = useState(false);
-
-  useEffect(() => {
-    // Wait for extension to inject window.midnight
-    const check = () => {
-      const wallet = (window as any).midnight?.mnLace;
-      if (wallet && typeof wallet.enable === "function") {
-        setIsAvailable(true);
-        return true;
-      }
-      return false;
-    };
-    if (!check()) {
-      // Retry a few times – extension may inject slightly after page load
-      const intervals = [500, 1000, 2000, 3000];
-      intervals.forEach(ms => setTimeout(check, ms));
-    }
-  }, []);
-
   async function connect() {
     setError(null);
     setLoading(true);
     try {
-      const wallet = (window as any).midnight?.mnLace;
-      if (!wallet) throw new Error("Midnight Lace wallet not found");
-      const api = await wallet.enable();
-      const state = await api.state();
-      const address = state.address ?? state.coinPublicKey ?? state.encryptionPublicKey ?? "Connected";
-      setAddr(address);
-      setConnected(true);
+      const api = await (window as any).midnight.mnLace.enable();
+      if (api) {
+        setConnected(true);
+        const state = await api.state();
+        const address = state.address ?? state.coinPublicKey ?? "Connected";
+        setAddr(address);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection failed");
     } finally {
@@ -620,18 +602,6 @@ function MidnightWalletButton() {
   function disconnect() {
     setConnected(false);
     setAddr(null);
-  }
-
-  if (!isAvailable) {
-    return (
-      <a href="https://chromewebstore.google.com/detail/lace-beta/hgeekaiplokcnmakghbdfbgnlfheichg"
-        target="_blank" rel="noopener noreferrer"
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.25)", padding: "8px 14px", borderRadius: 10, fontSize: 12, textDecoration: "none", whiteSpace: "nowrap" }}
-        title="Install Lace Midnight wallet">
-        <MidnightLogo />
-        Install Midnight
-      </a>
-    );
   }
 
   if (connected && addr) {

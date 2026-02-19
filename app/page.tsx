@@ -709,7 +709,7 @@ export default function App() {
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="fitnight" style={{ height: 20, width: 20, objectFit: "contain", display: "block" }} /> 
+          <img src="/logo.png" alt="fitnight" style={{ height: 30, width: 30, objectFit: "contain", display: "block" }} /> 
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
           <a href="https://www.fitnight.xyz/" target="_blank" rel="noopener noreferrer"
             style={{ display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.45)", padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap" }}>

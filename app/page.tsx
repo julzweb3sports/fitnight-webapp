@@ -585,7 +585,7 @@ function MidnightWalletButton() {
     setError(null);
     setLoading(true);
     try {
-      const api = await (window as any).midnight.mnLace.connect();
+      const api = await (window as any).midnight.mnLace.connect("preview");
       if (api) {
         setConnected(true);
         const state = await api.state();

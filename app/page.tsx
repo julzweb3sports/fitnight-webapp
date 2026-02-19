@@ -580,18 +580,21 @@ function MidnightWalletButton() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const isAvailable = typeof window !== "undefined" && !!(window as any).midnight?.mnLace;
+  const isAvailable = typeof window !== "undefined" && !!(window as any).midnight && Object.keys((window as any).midnight).some(k => typeof (window as any).midnight[k]?.enable === "function");
 
   async function connect() {
     setError(null);
     setLoading(true);
     try {
-      const wallet = (window as any).midnight?.mnLace;
-      if (!wallet) throw new Error("Midnight Lace wallet not found");
+      const midnight = (window as any).midnight;
+      if (!midnight) throw new Error("Midnight Lace wallet not found");
+      // Find the first available midnight wallet provider
+      const walletName = Object.keys(midnight).find(k => typeof midnight[k]?.enable === "function");
+      if (!walletName) throw new Error("No Midnight wallet found");
+      const wallet = midnight[walletName];
       const api = await wallet.enable();
       const state = await api.state();
-      // Address is in state.address (Bech32m format)
-      const address = state.address ?? state.coinPublicKey ?? "Connected";
+      const address = state.address ?? state.coinPublicKey ?? state.encryptionPublicKey ?? "Connected";
       setAddr(address);
       setConnected(true);
     } catch (e) {

@@ -585,13 +585,9 @@ function MidnightWalletButton() {
     setError(null);
     setLoading(true);
     try {
-      const api = await (window as any).midnight.mnLace.connect("preview");
-      if (api) {
-        setConnected(true);
-        const state = await api.state();
-        const address = state.address ?? state.coinPublicKey ?? "Connected";
-        setAddr(address);
-      }
+      await (window as any).midnight.mnLace.connect("preview");
+      setConnected(true);
+      setAddr("preview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection failed");
     } finally {
@@ -712,6 +708,8 @@ export default function App() {
       {/* Top Nav */}
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid rgba(255,255,255,.07)", marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="fitnight" height={32} style={{ display: "block", objectFit: "contain" }} />
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>fitnight</div>
           <a href="https://www.fitnight.xyz/" target="_blank" rel="noopener noreferrer"
             style={{ display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.45)", padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap" }}>
@@ -743,7 +741,9 @@ export default function App() {
         {!hasAnyConnection ? (
           /* Not connected state */
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>Welcome to fitnight</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="fitnight" height={56} style={{ display: "block", objectFit: "contain", marginBottom: 8 }} />
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>Welcome</div>
             <div style={{ fontSize: 15, opacity: 0.45, maxWidth: 360 }}>Connect your wallet or sign in with social to get started.</div>
           </div>
         ) : (

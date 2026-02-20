@@ -695,7 +695,183 @@ function CardanoWalletButton() {
 
 
 // ── Create Membership Tab ──
+// ── Privacy Level Data ──
+const PRIVACY_LEVELS = [
+  {
+    key: "fitnight",
+    badge: "Maximum Privacy",
+    badgeColor: "rgba(74,222,128,.15)",
+    badgeBorder: "rgba(74,222,128,.3)",
+    badgeText: "rgba(74,222,128,.9)",
+    description: "Completely anonymous. Members pay upfront and train without any personal data disclosure.",
+    metadata: [
+      { field: "Membership Status", visible: true },
+      { field: "Remaining Duration", visible: false },
+    ],
+    legalNotice: "No formal contract. Payment upfront, fully anonymous training. Check-ins are limited to once per day to prevent misuse.",
+    hasResell: true,
+    hasCheckinWarning: true,
+  },
+  {
+    key: "anon",
+    badge: "High Privacy",
+    badgeColor: "rgba(100,150,255,.15)",
+    badgeBorder: "rgba(100,150,255,.3)",
+    badgeText: "rgba(150,180,255,.9)",
+    description: "Legal contract with hidden personal data. Only nickname visible during check-in.",
+    metadata: [
+      { field: "Membership Status", visible: true },
+      { field: "Nickname", visible: true },
+      { field: "Remaining Duration", visible: false },
+      { field: "Last Name", visible: false },
+      { field: "Address", visible: false },
+    ],
+    legalNotice: "Formal contract established. Personal data encrypted on-chain. Member must complete a one-time KYC check – the studio will not have access to the results. Check-ins are limited to once per day to prevent misuse.",
+    hasResell: false,
+    hasCheckinWarning: true,
+  },
+  {
+    key: "anonym",
+    badge: "Medium Privacy",
+    badgeColor: "rgba(255,200,50,.1)",
+    badgeBorder: "rgba(255,200,50,.3)",
+    badgeText: "rgba(255,200,50,.9)",
+    description: "Classic contract with visible duration. Most personal data remains hidden.",
+    metadata: [
+      { field: "Membership Status", visible: true },
+      { field: "Nickname", visible: true },
+      { field: "Remaining Duration", visible: true },
+      { field: "First Name", visible: false },
+      { field: "Last Name", visible: false },
+      { field: "Address", visible: false },
+      { field: "Phone Number", visible: false },
+      { field: "Birthdate", visible: false },
+      { field: "KYC Status", visible: false },
+    ],
+    legalNotice: "Closest to traditional contracts. Full personal data stored encrypted. Member must complete a one-time KYC check. Check-ins are limited to once per day to prevent misuse.",
+    hasResell: false,
+    hasCheckinWarning: true,
+  },
+  {
+    key: "transparent",
+    badge: "Full Transparency",
+    badgeColor: "rgba(255,100,100,.1)",
+    badgeBorder: "rgba(255,100,100,.3)",
+    badgeText: "rgba(255,150,150,.9)",
+    description: "All information visible. Traditional membership with blockchain benefits.",
+    metadata: [
+      { field: "Membership Status", visible: true },
+      { field: "Nickname", visible: true },
+      { field: "Remaining Duration", visible: true },
+      { field: "First Name", visible: true },
+      { field: "Last Name", visible: true },
+      { field: "Address", visible: true },
+      { field: "Phone Number", visible: true },
+      { field: "Birthdate", visible: true },
+      { field: "KYC Status", visible: true },
+    ],
+    legalNotice: "Full transparency. All data publicly visible on blockchain.",
+    hasResell: false,
+    hasCheckinWarning: false,
+  },
+];
+
+// ── Privacy Level Selector ──
+function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null; onSelect: (key: string) => void }) {
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [resellEnabled, setResellEnabled] = useState(false);
+  const [royaltyFee, setRoyaltyFee] = useState("");
+
+  return (
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Privacy Level *</div>
+      <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 14 }}>Hover over a level to see metadata details. Click to select.</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {PRIVACY_LEVELS.map(level => (
+          <div key={level.key} style={{ position: "relative" }}
+            onMouseEnter={() => setHoveredKey(level.key)}
+            onMouseLeave={() => setHoveredKey(null)}>
+            {/* Pill button */}
+            <button
+              type="button"
+              onClick={() => onSelect(level.key)}
+              style={{
+                padding: "8px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600,
+                fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s",
+                background: selected === level.key ? "#fff" : "rgba(255,255,255,.06)",
+                color: selected === level.key ? "#000" : "#fff",
+                border: selected === level.key ? "2px solid #fff" : "2px solid rgba(255,255,255,.15)",
+              }}>
+              {level.key}
+              {selected === level.key && " ✓"}
+            </button>
+
+            {/* Hover tooltip with table */}
+            {hoveredKey === level.key && (
+              <div style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, zIndex: 300, width: 320 }}>
+                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.15)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+                  {/* Badge */}
+                  <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 20, marginBottom: 10, background: level.badgeColor, border: `1px solid ${level.badgeBorder}`, color: level.badgeText }}>
+                    {level.badge}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12, lineHeight: 1.5 }}>{level.description}</div>
+
+                  {/* Metadata table */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 12px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Metadata</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Visibility</div>
+                      {level.metadata.map(({ field, visible }) => (
+                        <>
+                          <div key={field + "f"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", opacity: visible ? 1 : 0.5 }}>{field}</div>
+                          <div key={field + "v"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", color: visible ? "rgba(74,222,128,.9)" : "rgba(255,100,100,.6)", whiteSpace: "nowrap" }}>
+                            {visible ? "✓ Visible" : "🔒 Hidden"}
+                          </div>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Legal notice */}
+                  <div style={{ background: "rgba(0,150,255,.08)", border: "1px solid rgba(0,150,255,.2)", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(100,180,255,.9)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Legal Notice</div>
+                    <div style={{ fontSize: 11, opacity: 0.85, lineHeight: 1.5 }}>{level.legalNotice}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Resell option for fitnight */}
+      {selected === "fitnight" && (
+        <div style={{ marginTop: 16, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <input type="checkbox" checked={resellEnabled} onChange={e => setResellEnabled(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Allow members to resell this membership</span>
+          </label>
+          {resellEnabled && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+              <label style={{ fontSize: 13, opacity: 0.7, whiteSpace: "nowrap" }}>Studio Royalty Fee (%)</label>
+              <input
+                type="number" min="0" max="100" step="0.5"
+                value={royaltyFee}
+                onChange={e => setRoyaltyFee(e.target.value)}
+                placeholder="e.g. 5"
+                style={{ background: "#000", border: "1px solid rgba(255,255,255,.2)", color: "#fff", padding: "8px 12px", borderRadius: 6, fontFamily: "inherit", fontSize: 13, width: 120, outline: "none" }}
+              />
+              <span style={{ fontSize: 11, opacity: 0.45 }}>% per secondary sale</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CreateMembershipTab() {
+  const [privacyLevel, setPrivacyLevel] = useState<string | null>(null);
   const [duration, setDuration] = useState("");
   const [feeModel, setFeeModel] = useState("");
   const [cryptoPayments, setCryptoPayments] = useState<string[]>([]);
@@ -716,7 +892,7 @@ function CreateMembershipTab() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const data = { ...formData, duration, feeModel, cryptoPayments, fiatPayments };
+    const data = { ...formData, privacyLevel, duration, feeModel, cryptoPayments, fiatPayments };
     console.log("Form Data:", data);
     alert("Form submitted successfully!\n\nNext step: Create Contract");
   }
@@ -762,6 +938,12 @@ function CreateMembershipTab() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Privacy Level */}
+        <div style={{ ...sectionStyle, paddingBottom: 32, borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Privacy Level</div>
+          <PrivacyLevelSelector selected={privacyLevel} onSelect={setPrivacyLevel} />
+        </div>
+
         {/* Studio Information */}
         <div style={sectionStyle}>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Studio Information</div>
@@ -778,8 +960,8 @@ function CreateMembershipTab() {
               <label style={labelStyle}>Chain Operation *</label>
               <select style={inputStyle} required value={formData.chainOperation} onChange={e => handleField("chainOperation", e.target.value)}>
                 <option value="">Select...</option>
-                <option value="no">Nein</option>
-                <option value="yes">Ja</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
               </select>
               <small style={smallStyle}>Do you operate multiple locations?</small>
             </div>
@@ -804,7 +986,7 @@ function CreateMembershipTab() {
             </div>
             {duration === "custom" && (
               <div style={groupStyle}>
-                <label style={labelStyle}>Custome Laufzeit (Monate) *</label>
+                <label style={labelStyle}>Custom Duration (Months) *</label>
                 <input style={inputStyle} type="number" required placeholder="e.g. 18" min="1" value={formData.customDuration} onChange={e => handleField("customDuration", e.target.value)} />
               </div>
             )}

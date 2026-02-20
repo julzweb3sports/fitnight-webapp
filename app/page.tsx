@@ -693,6 +693,221 @@ function CardanoWalletButton() {
   );
 }
 
+
+// ── Create Membership Tab ──
+function CreateMembershipTab() {
+  const [duration, setDuration] = useState("");
+  const [feeModel, setFeeModel] = useState("");
+  const [cryptoPayments, setCryptoPayments] = useState<string[]>([]);
+  const [fiatPayments, setFiatPayments] = useState<string[]>([]);
+  const [formData, setFormData] = useState({
+    studioName: "", studioAddress: "", chainOperation: "",
+    customDuration: "", price: "", quantity: "",
+    percentageFee: "", accessAreas: "", benefits: "",
+  });
+
+  function handleField(key: string, val: string) {
+    setFormData(p => ({ ...p, [key]: val }));
+  }
+
+  function toggleCheckbox(list: string[], setList: (v: string[]) => void, val: string) {
+    setList(list.includes(val) ? list.filter(x => x !== val) : [...list, val]);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const data = { ...formData, duration, feeModel, cryptoPayments, fiatPayments };
+    console.log("Form Data:", data);
+    alert("Form submitted successfully!\n\nNext step: Create Contract");
+  }
+
+  const inputStyle: React.CSSProperties = {
+    background: "#000", border: "1px solid rgba(255,255,255,.2)", color: "#fff",
+    padding: "12px 16px", borderRadius: 6, fontFamily: "inherit", fontSize: 14, width: "100%",
+    outline: "none",
+  };
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, marginBottom: 6, display: "block" };
+  const smallStyle: React.CSSProperties = { fontSize: 12, opacity: 0.6, marginTop: 4, display: "block" };
+  const sectionStyle: React.CSSProperties = { marginBottom: 40 };
+  const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 };
+  const groupStyle: React.CSSProperties = { display: "flex", flexDirection: "column" };
+
+  const cryptoOptions = [
+    { value: "night", label: "NIGHT" }, { value: "monero", label: "Monero (XMR)" },
+    { value: "bitcoin", label: "Bitcoin (BTC)" }, { value: "ethereum", label: "Ethereum (ETH)" },
+    { value: "solana", label: "Solana (SOL)" }, { value: "cardano", label: "Cardano (ADA)" },
+    { value: "polygon", label: "Polygon (MATIC)" }, { value: "bnb", label: "BNB Chain" },
+    { value: "avalanche", label: "Avalanche (AVAX)" }, { value: "polkadot", label: "Polkadot (DOT)" },
+  ];
+  const fiatOptions = [
+    { value: "googlepay", label: "Google Pay" }, { value: "applepay", label: "Apple Pay" },
+    { value: "visa", label: "Visa" }, { value: "mastercard", label: "Mastercard" },
+    { value: "amex", label: "American Express" }, { value: "sepa", label: "SEPA" },
+  ];
+
+  return (
+    <div>
+      {/* Preview Banner */}
+      <div style={{ background: "rgba(255,200,50,.08)", border: "1px solid rgba(255,200,50,.25)", borderRadius: 10, padding: "10px 16px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 16 }}>🚧</span>
+        <div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,200,50,.9)" }}>Preview only</span>
+          <span style={{ fontSize: 12, color: "rgba(255,200,50,.6)", marginLeft: 8 }}>This form is not functional yet – contract creation coming soon.</span>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Configure Your Membership NFT</div>
+        <div style={{ fontSize: 13, opacity: 0.5 }}>Fill in the details to configure your NFT membership</div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        {/* Studio Information */}
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Studio Information</div>
+          <div style={gridStyle}>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Studio Name *</label>
+              <input style={inputStyle} type="text" required placeholder="e.g. PowerFit Gym" value={formData.studioName} onChange={e => handleField("studioName", e.target.value)} />
+            </div>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Address *</label>
+              <input style={inputStyle} type="text" required placeholder="123 Main Street, New York" value={formData.studioAddress} onChange={e => handleField("studioAddress", e.target.value)} />
+            </div>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Chain Operation *</label>
+              <select style={inputStyle} required value={formData.chainOperation} onChange={e => handleField("chainOperation", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="no">Nein</option>
+                <option value="yes">Ja</option>
+              </select>
+              <small style={smallStyle}>Do you operate multiple locations?</small>
+            </div>
+          </div>
+        </div>
+
+        {/* Membership Details */}
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Membership Details</div>
+          <div style={gridStyle}>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Duration *</label>
+              <select style={inputStyle} required value={duration} onChange={e => setDuration(e.target.value)}>
+                <option value="">Select...</option>
+                <option value="1">1 Month</option>
+                <option value="3">3 Months</option>
+                <option value="6">6 Months</option>
+                <option value="12">12 Months</option>
+                <option value="24">24 Months</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            {duration === "custom" && (
+              <div style={groupStyle}>
+                <label style={labelStyle}>Custome Laufzeit (Monate) *</label>
+                <input style={inputStyle} type="number" required placeholder="e.g. 18" min="1" value={formData.customDuration} onChange={e => handleField("customDuration", e.target.value)} />
+              </div>
+            )}
+            <div style={groupStyle}>
+              <label style={labelStyle}>Price *</label>
+              <input style={inputStyle} type="number" required placeholder="299.00" step="0.01" min="0" value={formData.price} onChange={e => handleField("price", e.target.value)} />
+              <small style={smallStyle}>Price per Membership</small>
+            </div>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Quantity *</label>
+              <input style={inputStyle} type="number" required placeholder="100" min="1" value={formData.quantity} onChange={e => handleField("quantity", e.target.value)} />
+              <small style={smallStyle}>How many NFTs should be minted?</small>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Options */}
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Payment Options</div>
+          <div style={groupStyle}>
+            <label style={labelStyle}>Accepted Cryptocurrencies</label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 8 }}>
+              {cryptoOptions.map(({ value, label }) => (
+                <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: 6, background: cryptoPayments.includes(value) ? "rgba(255,255,255,.06)" : "transparent", border: `1px solid ${cryptoPayments.includes(value) ? "rgba(255,255,255,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 0.15s" }}>
+                  <input type="checkbox" checked={cryptoPayments.includes(value)} onChange={() => toggleCheckbox(cryptoPayments, setCryptoPayments, value)} style={{ width: 16, height: 16, cursor: "pointer" }} />
+                  <span style={{ fontSize: 13 }}>{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ ...groupStyle, marginTop: 24 }}>
+            <label style={labelStyle}>Accepted Fiat Payment Methods</label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginTop: 8 }}>
+              {fiatOptions.map(({ value, label }) => (
+                <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: 6, background: fiatPayments.includes(value) ? "rgba(255,255,255,.06)" : "transparent", border: `1px solid ${fiatPayments.includes(value) ? "rgba(255,255,255,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 0.15s" }}>
+                  <input type="checkbox" checked={fiatPayments.includes(value)} onChange={() => toggleCheckbox(fiatPayments, setFiatPayments, value)} style={{ width: 16, height: 16, cursor: "pointer" }} />
+                  <span style={{ fontSize: 13 }}>{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Processing Fee */}
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Processing Fee</div>
+          <div style={gridStyle}>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Fee Model *</label>
+              <select style={inputStyle} required value={feeModel} onChange={e => setFeeModel(e.target.value)}>
+                <option value="">Select...</option>
+                <option value="percentage">Percentage Fee per Sale</option>
+                <option value="flat">One-time Payment per Mint</option>
+              </select>
+            </div>
+            {feeModel === "percentage" && (
+              <div style={groupStyle}>
+                <label style={labelStyle}>Percentage *</label>
+                <input style={inputStyle} type="number" required placeholder="5" step="0.1" min="1" max="100" value={formData.percentageFee} onChange={e => handleField("percentageFee", e.target.value)} />
+                <small style={smallStyle}>Minimum 1% – fee fitnight receives per sale</small>
+              </div>
+            )}
+            {feeModel === "flat" && (
+              <div style={groupStyle}>
+                <label style={labelStyle}>Confirm One-time Payment</label>
+                <input style={{ ...inputStyle, opacity: 0.5 }} type="text" value="$250 per Mint" disabled />
+                <small style={smallStyle}>One-time payment of $250 per minted membership</small>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Settings */}
+        <div style={sectionStyle}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 18, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Additional Settings</div>
+          <div style={gridStyle}>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Access Areas</label>
+              <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} placeholder="e.g. Main Floor, Cardio Zone, Sauna, Pool" value={formData.accessAreas} onChange={e => handleField("accessAreas", e.target.value)} />
+              <small style={smallStyle}>Comma-separated list of accessible areas</small>
+            </div>
+            <div style={groupStyle}>
+              <label style={labelStyle}>Special Benefits</label>
+              <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} placeholder="e.g. Free guest passes, discount on personal training" value={formData.benefits} onChange={e => handleField("benefits", e.target.value)} />
+              <small style={smallStyle}>Special perks of this membership</small>
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginTop: 8 }}>
+          <button type="button" style={{ padding: "13px 28px", fontSize: 14, fontWeight: 600, background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+            ← Back
+          </button>
+          <button type="submit" style={{ padding: "13px 28px", fontSize: 14, fontWeight: 600, background: "#fff", color: "#000", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+            Create Contract →
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ── Main App ──
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("nfts");
@@ -782,7 +997,7 @@ export default function App() {
               {activeTab === "gyms" && <PartnerGymsTab />}
               {activeTab === "memberships" && <ComingSoonTab label="My Memberships" />}
               {activeTab === "buy" && <ComingSoonTab label="Buy Membership" />}
-              {activeTab === "create" && <ComingSoonTab label="Create Membership" />}
+              {activeTab === "create" && <CreateMembershipTab />}
             </div>
           </>
         )}

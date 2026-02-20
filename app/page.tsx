@@ -776,15 +776,92 @@ const PRIVACY_LEVELS = [
   },
 ];
 
+const ALL_CUSTOM_FIELDS = [
+  "Nickname", "Remaining Duration", "First Name", "Last Name",
+  "Address", "Phone Number", "Birthdate", "KYC Status"
+];
+
+// ── Privacy Overview Modal ──
+function PrivacyOverviewModal({ onClose }: { onClose: () => void }) {
+  const allFields = ["Membership Status", ...ALL_CUSTOM_FIELDS];
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.15)", borderRadius: 16, padding: 28, maxWidth: 900, width: "100%", maxHeight: "90vh", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>Privacy Level Overview</div>
+          <button onClick={onClose} style={{ background: "transparent", border: "1px solid rgba(255,255,255,.2)", color: "#fff", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 16 }}>✕</button>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "10px 14px", background: "rgba(255,255,255,.05)", borderBottom: "1px solid rgba(255,255,255,.1)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>Metadata</th>
+                {PRIVACY_LEVELS.map(l => (
+                  <th key={l.key} style={{ textAlign: "center", padding: "10px 14px", background: "rgba(255,255,255,.05)", borderBottom: "1px solid rgba(255,255,255,.1)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
+                    <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, background: l.badgeColor, border: `1px solid ${l.badgeBorder}`, color: l.badgeText, fontSize: 11, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{l.badge}</div>
+                    <div>{l.key}</div>
+                  </th>
+                ))}
+                <th style={{ textAlign: "center", padding: "10px 14px", background: "rgba(255,255,255,.05)", borderBottom: "1px solid rgba(255,255,255,.1)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
+                  <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, background: "rgba(180,100,255,.1)", border: "1px solid rgba(180,100,255,.3)", color: "rgba(200,150,255,.9)", fontSize: 11, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Custom</div>
+                  <div>custom</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {allFields.map((field, i) => (
+                <tr key={field} style={{ background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,.02)" }}>
+                  <td style={{ padding: "10px 14px", fontWeight: 500, borderBottom: "1px solid rgba(255,255,255,.04)" }}>{field}</td>
+                  {PRIVACY_LEVELS.map(l => {
+                    const meta = l.metadata.find(m => m.field === field);
+                    const vis = meta ? meta.visible : false;
+                    const mandatory = field === "Membership Status";
+                    return (
+                      <td key={l.key} style={{ textAlign: "center", padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                        {mandatory
+                          ? <span style={{ color: "rgba(74,222,128,.9)", fontWeight: 700 }}>✓</span>
+                          : vis
+                            ? <span style={{ color: "rgba(74,222,128,.9)" }}>✓</span>
+                            : <span style={{ color: "rgba(255,100,100,.5)" }}>🔒</span>}
+                      </td>
+                    );
+                  })}
+                  <td style={{ textAlign: "center", padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                    {field === "Membership Status"
+                      ? <span style={{ color: "rgba(74,222,128,.9)", fontWeight: 700 }}>✓ always</span>
+                      : <span style={{ color: "rgba(200,150,255,.7)", fontSize: 11 }}>✓ / 🔒 selectable</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: 20, fontSize: 11, opacity: 0.4, textAlign: "center" }}>Click outside to close</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Privacy Level Selector ──
 function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null; onSelect: (key: string) => void }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [resellEnabled, setResellEnabled] = useState(false);
   const [royaltyFee, setRoyaltyFee] = useState("");
+  const [showOverview, setShowOverview] = useState(false);
+  const [customFields, setCustomFields] = useState<Record<string, boolean>>({
+    "Nickname": true, "Remaining Duration": true, "First Name": false,
+    "Last Name": false, "Address": false, "Phone Number": false,
+    "Birthdate": false, "KYC Status": false,
+  });
   const buttonRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const tooltipRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [tooltipPos, setTooltipPos] = useState<Record<string, { left: number; fromTop: boolean }>>({});
+  const hoverTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   function handleMouseEnter(key: string) {
+    if (hoverTimeouts.current[key]) clearTimeout(hoverTimeouts.current[key]);
     setHoveredKey(key);
     const el = buttonRefs.current[key];
     if (!el) return;
@@ -798,70 +875,133 @@ function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null;
     setTooltipPos(p => ({ ...p, [key]: { left, fromTop } }));
   }
 
+  function handleMouseLeave(key: string) {
+    hoverTimeouts.current[key] = setTimeout(() => setHoveredKey(null), 120);
+  }
+
+  function handleTooltipEnter(key: string) {
+    if (hoverTimeouts.current[key]) clearTimeout(hoverTimeouts.current[key]);
+  }
+
+  function handleTooltipLeave(key: string) {
+    hoverTimeouts.current[key] = setTimeout(() => setHoveredKey(null), 120);
+  }
+
+  const customLevel = {
+    key: "custom",
+    badge: "Custom",
+    badgeColor: "rgba(180,100,255,.1)",
+    badgeBorder: "rgba(180,100,255,.3)",
+    badgeText: "rgba(200,150,255,.9)",
+    description: "Define exactly which fields are visible or hidden.",
+  };
+
   return (
     <div>
-      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Privacy Level *</div>
-      <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 14 }}>Hover over a level to see metadata details. Click to select.</div>
+      {showOverview && <PrivacyOverviewModal onClose={() => setShowOverview(false)} />}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>Privacy Level *</div>
+        <button type="button" onClick={() => setShowOverview(true)}
+          style={{ display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid rgba(255,255,255,.15)", color: "rgba(255,255,255,.5)", padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.4)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,.9)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.15)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,.5)"; }}>
+          ⊞ Compare all levels
+        </button>
+      </div>
+      <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 14 }}>Hover over a level to see details. Click to select.</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {/* Standard levels */}
         {PRIVACY_LEVELS.map(level => {
           const pos = tooltipPos[level.key];
           return (
-          <div key={level.key} style={{ position: "relative" }}
-            ref={(el: HTMLDivElement | null) => { buttonRefs.current[level.key] = el; }}
-            onMouseEnter={() => handleMouseEnter(level.key)}
-            onMouseLeave={() => setHoveredKey(null)}>
-            {/* Pill button */}
-            <button
-              type="button"
-              onClick={() => onSelect(level.key)}
-              style={{
-                padding: "8px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600,
-                fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s",
-                background: selected === level.key ? "#fff" : "rgba(255,255,255,.06)",
-                color: selected === level.key ? "#000" : "#fff",
-                border: selected === level.key ? "2px solid #fff" : "2px solid rgba(255,255,255,.15)",
-              }}>
-              {level.key}
-              {selected === level.key && " ✓"}
-            </button>
-
-            {/* Hover tooltip with table */}
-            {hoveredKey === level.key && (
-              <div style={{ position: "absolute", ...(pos?.fromTop ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }), left: pos?.left ?? 0, zIndex: 300, width: 320 }}>
-                <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.15)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
-                  {/* Badge */}
-                  <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 20, marginBottom: 10, background: level.badgeColor, border: `1px solid ${level.badgeBorder}`, color: level.badgeText }}>
-                    {level.badge}
-                  </div>
-                  <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12, lineHeight: 1.5 }}>{level.description}</div>
-
-                  {/* Metadata table */}
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 12px" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Metadata</div>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Visibility</div>
-                      {level.metadata.map(({ field, visible }) => (
-                        <>
-                          <div key={field + "f"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", opacity: visible ? 1 : 0.5 }}>{field}</div>
-                          <div key={field + "v"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", color: visible ? "rgba(74,222,128,.9)" : "rgba(255,100,100,.6)", whiteSpace: "nowrap" }}>
-                            {visible ? "✓ Visible" : "🔒 Hidden"}
-                          </div>
-                        </>
-                      ))}
+            <div key={level.key} style={{ position: "relative" }}
+              ref={(el: HTMLDivElement | null) => { buttonRefs.current[level.key] = el; }}
+              onMouseEnter={() => handleMouseEnter(level.key)}
+              onMouseLeave={() => handleMouseLeave(level.key)}>
+              <button type="button" onClick={() => onSelect(level.key)}
+                style={{ padding: "8px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s",
+                  background: selected === level.key ? "#fff" : "rgba(255,255,255,.06)",
+                  color: selected === level.key ? "#000" : "#fff",
+                  border: selected === level.key ? "2px solid #fff" : "2px solid rgba(255,255,255,.15)" }}>
+                {level.key}{selected === level.key && " ✓"}
+              </button>
+              {hoveredKey === level.key && (
+                <div style={{ position: "absolute", ...(pos?.fromTop ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }), left: pos?.left ?? 0, zIndex: 300, width: 320 }}
+                  ref={(el: HTMLDivElement | null) => { tooltipRefs.current[level.key] = el; }}
+                  onMouseEnter={() => handleTooltipEnter(level.key)}
+                  onMouseLeave={() => handleTooltipLeave(level.key)}>
+                  <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.15)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+                    <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 20, marginBottom: 10, background: level.badgeColor, border: `1px solid ${level.badgeBorder}`, color: level.badgeText }}>{level.badge}</div>
+                    <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12, lineHeight: 1.5 }}>{level.description}</div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px 12px" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Metadata</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Visibility</div>
+                        {level.metadata.map(({ field, visible }) => (
+                          <>
+                            <div key={field + "f"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", opacity: visible ? 1 : 0.5 }}>{field}</div>
+                            <div key={field + "v"} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.04)", color: visible ? "rgba(74,222,128,.9)" : "rgba(255,100,100,.6)", whiteSpace: "nowrap" }}>
+                              {visible ? "✓ Visible" : "🔒 Hidden"}
+                            </div>
+                          </>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ background: "rgba(0,150,255,.08)", border: "1px solid rgba(0,150,255,.2)", borderRadius: 8, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(100,180,255,.9)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Legal Notice</div>
+                      <div style={{ fontSize: 11, opacity: 0.85, lineHeight: 1.5 }}>{level.legalNotice}</div>
                     </div>
                   </div>
-
-                  {/* Legal notice */}
-                  <div style={{ background: "rgba(0,150,255,.08)", border: "1px solid rgba(0,150,255,.2)", borderRadius: 8, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(100,180,255,.9)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Legal Notice</div>
-                    <div style={{ fontSize: 11, opacity: 0.85, lineHeight: 1.5 }}>{level.legalNotice}</div>
-                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           );
         })}
+
+        {/* Custom level */}
+        <div style={{ position: "relative" }}
+          ref={(el: HTMLDivElement | null) => { buttonRefs.current["custom"] = el; }}
+          onMouseEnter={() => handleMouseEnter("custom")}
+          onMouseLeave={() => handleMouseLeave("custom")}>
+          <button type="button" onClick={() => onSelect("custom")}
+            style={{ padding: "8px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s",
+              background: selected === "custom" ? "rgba(180,100,255,.9)" : "rgba(180,100,255,.1)",
+              color: "#fff",
+              border: selected === "custom" ? "2px solid rgba(200,150,255,.9)" : "2px solid rgba(180,100,255,.3)" }}>
+            ✦ custom{selected === "custom" && " ✓"}
+          </button>
+          {hoveredKey === "custom" && (
+            <div style={{ position: "absolute", ...(tooltipPos["custom"]?.fromTop ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }), left: tooltipPos["custom"]?.left ?? 0, zIndex: 300, width: 320 }}
+              ref={(el: HTMLDivElement | null) => { tooltipRefs.current["custom"] = el; }}
+              onMouseEnter={() => handleTooltipEnter("custom")}
+              onMouseLeave={() => handleTooltipLeave("custom")}>
+              <div style={{ background: "#111", border: "1px solid rgba(180,100,255,.3)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+                <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 20, marginBottom: 10, background: customLevel.badgeColor, border: `1px solid ${customLevel.badgeBorder}`, color: customLevel.badgeText }}>Custom</div>
+                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12, lineHeight: 1.5 }}>{customLevel.description}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "6px 12px", alignItems: "center" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Field</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, opacity: 0.4, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,.07)" }}>Visible</div>
+                  {/* Membership Status - always visible */}
+                  <div style={{ fontSize: 12, padding: "2px 0" }}>Membership Status</div>
+                  <div style={{ fontSize: 12, color: "rgba(74,222,128,.9)", whiteSpace: "nowrap" }}>✓ always</div>
+                  {/* Toggleable fields */}
+                  {ALL_CUSTOM_FIELDS.map(field => (
+                    <>
+                      <div key={field + "l"} style={{ fontSize: 12, padding: "2px 0" }}>{field}</div>
+                      <label key={field + "t"} style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", cursor: "pointer" }}
+                        onClick={e => e.stopPropagation()}>
+                        <div onClick={() => setCustomFields(p => ({ ...p, [field]: !p[field] }))}
+                          style={{ width: 36, height: 20, borderRadius: 10, background: customFields[field] ? "rgba(74,222,128,.7)" : "rgba(255,255,255,.1)", border: `1px solid ${customFields[field] ? "rgba(74,222,128,.5)" : "rgba(255,255,255,.2)"}`, position: "relative", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}>
+                          <div style={{ position: "absolute", top: 2, left: customFields[field] ? 18 : 2, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+                        </div>
+                      </label>
+                    </>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Resell option for fitnight */}
@@ -874,13 +1014,8 @@ function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null;
           {resellEnabled && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
               <label style={{ fontSize: 13, opacity: 0.7, whiteSpace: "nowrap" }}>Studio Royalty Fee (%)</label>
-              <input
-                type="number" min="0" max="100" step="0.5"
-                value={royaltyFee}
-                onChange={e => setRoyaltyFee(e.target.value)}
-                placeholder="e.g. 5"
-                style={{ background: "#000", border: "1px solid rgba(255,255,255,.2)", color: "#fff", padding: "8px 12px", borderRadius: 6, fontFamily: "inherit", fontSize: 13, width: 120, outline: "none" }}
-              />
+              <input type="number" min="0" max="100" step="0.5" value={royaltyFee} onChange={e => setRoyaltyFee(e.target.value)} placeholder="e.g. 5"
+                style={{ background: "#000", border: "1px solid rgba(255,255,255,.2)", color: "#fff", padding: "8px 12px", borderRadius: 6, fontFamily: "inherit", fontSize: 13, width: 120, outline: "none" }} />
               <span style={{ fontSize: 11, opacity: 0.45 }}>% per secondary sale</span>
             </div>
           )}

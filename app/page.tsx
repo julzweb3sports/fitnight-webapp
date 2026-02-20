@@ -991,7 +991,7 @@ export default function App() {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6 }}>
+            <div style={{ display: "flex", gap: 4, background: "#0d0d0d", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: 6, justifyContent: "center" }}>
               {TABS.map(({ key, label, Icon }) => {
                 const hasDropdown = key === "buy" || key === "create";
                 return (
@@ -1004,21 +1004,23 @@ export default function App() {
                       {label}
                     </button>
                     {hasDropdown && hoveredTab === key && (
-                      <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#111", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 6, zIndex: 200, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
-                        {(["Membership", "Daypass", "Service"] as const).map(sub => (
-                          <button key={sub}
-                            onClick={() => {
-                              setActiveTab(key);
-                              if (key === "create") setCreateSubTab(sub.toLowerCase() as "membership" | "daypass" | "service");
-                              if (key === "buy") setBuySubTab(sub.toLowerCase() as "membership" | "daypass" | "service");
-                              setHoveredTab(null);
-                            }}
-                            style={{ background: "transparent", border: "none", color: "#fff", padding: "8px 12px", borderRadius: 7, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left", opacity: 0.8 }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.08)"; (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.8"; }}>
-                            {sub}
-                          </button>
-                        ))}
+                      <div style={{ position: "absolute", top: "100%", left: 0, paddingTop: 8, zIndex: 200 }}>
+                        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 6, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
+                          {(["Membership", "Daypass", "Service"] as const).map(sub => (
+                            <button key={sub}
+                              onClick={() => {
+                                setActiveTab(key);
+                                if (key === "create") setCreateSubTab(sub.toLowerCase() as "membership" | "daypass" | "service");
+                                if (key === "buy") setBuySubTab(sub.toLowerCase() as "membership" | "daypass" | "service");
+                                setHoveredTab(null);
+                              }}
+                              style={{ background: "transparent", border: "none", color: "#fff", padding: "8px 12px", borderRadius: 7, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left", opacity: 0.8 }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.08)"; (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.8"; }}>
+                              {sub}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

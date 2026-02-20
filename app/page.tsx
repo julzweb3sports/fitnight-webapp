@@ -82,8 +82,8 @@ const TABS = [
   { key: "holder" as Tab, label: "Holder Portal", Icon: IconHolder },
   { key: "gyms" as Tab, label: "Partner Gyms", Icon: IconGyms },
   { key: "memberships" as Tab, label: "My Memberships", Icon: IconMembership },
-  { key: "buy" as Tab, label: "Buy Membership", Icon: IconBuy },
-  { key: "create" as Tab, label: "Create Membership", Icon: IconCreate },
+  { key: "buy" as Tab, label: "Buy", Icon: IconBuy },
+  { key: "create" as Tab, label: "Create", Icon: IconCreate },
 ];
 
 function ComingSoonTab({ label }: { label: string }) {
@@ -914,6 +914,17 @@ export default function App() {
   const { user, primaryWallet, handleLogOut, setShowAuthFlow } = useDynamicContext();
   const isLoggedIn = useIsLoggedIn();
   const { connected } = useWallet();
+  const [isMobile, setIsMobile] = useState(false);
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [createSubTab, setCreateSubTab] = useState<"membership" | "daypass" | "service">("membership");
+  const [buySubTab, setBuySubTab] = useState<"membership" | "daypass" | "service">("membership");
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const hasAnyConnection = isLoggedIn || connected;
 
@@ -996,8 +1007,20 @@ export default function App() {
               {activeTab === "holder" && <HolderPortalTab />}
               {activeTab === "gyms" && <PartnerGymsTab />}
               {activeTab === "memberships" && <ComingSoonTab label="My Memberships" />}
-              {activeTab === "buy" && <ComingSoonTab label="Buy Membership" />}
-              {activeTab === "create" && <CreateMembershipTab />}
+              {activeTab === "buy" && (
+                <>
+                  {buySubTab === "membership" && <ComingSoonTab label="Buy Membership" />}
+                  {buySubTab === "daypass" && <ComingSoonTab label="Buy Daypass" />}
+                  {buySubTab === "service" && <ComingSoonTab label="Buy Service" />}
+                </>
+              )}
+              {activeTab === "create" && (
+                <>
+                  {createSubTab === "membership" && <CreateMembershipTab />}
+                  {createSubTab === "daypass" && <ComingSoonTab label="Create Daypass" />}
+                  {createSubTab === "service" && <ComingSoonTab label="Create Service" />}
+                </>
+              )}
             </div>
           </>
         )}

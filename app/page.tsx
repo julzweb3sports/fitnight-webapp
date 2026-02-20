@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type {} from "@midnight-ntwrk/dapp-connector-api";
 import { useDynamicContext, useIsLoggedIn, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useWallet, useWalletList } from "@meshsdk/react";
@@ -781,15 +781,34 @@ function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null;
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [resellEnabled, setResellEnabled] = useState(false);
   const [royaltyFee, setRoyaltyFee] = useState("");
+  const buttonRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [tooltipPos, setTooltipPos] = useState<Record<string, { left: number; fromTop: boolean }>>({});
+
+  function handleMouseEnter(key: string) {
+    setHoveredKey(key);
+    const el = buttonRefs.current[key];
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const tooltipW = 320;
+    const tooltipH = 420;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    const left = rect.left + tooltipW > viewW - 16 ? -(tooltipW - rect.width) : 0;
+    const fromTop = rect.bottom + tooltipH > viewH - 16;
+    setTooltipPos(p => ({ ...p, [key]: { left, fromTop } }));
+  }
 
   return (
     <div>
       <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Privacy Level *</div>
       <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 14 }}>Hover over a level to see metadata details. Click to select.</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {PRIVACY_LEVELS.map(level => (
+        {PRIVACY_LEVELS.map(level => {
+          const pos = tooltipPos[level.key];
+          return (
           <div key={level.key} style={{ position: "relative" }}
-            onMouseEnter={() => setHoveredKey(level.key)}
+            ref={(el: HTMLDivElement | null) => { buttonRefs.current[level.key] = el; }}
+            onMouseEnter={() => handleMouseEnter(level.key)}
             onMouseLeave={() => setHoveredKey(null)}>
             {/* Pill button */}
             <button
@@ -808,7 +827,7 @@ function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null;
 
             {/* Hover tooltip with table */}
             {hoveredKey === level.key && (
-              <div style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, zIndex: 300, width: 320 }}>
+              <div style={{ position: "absolute", ...(pos?.fromTop ? { bottom: "calc(100% + 10px)" } : { top: "calc(100% + 10px)" }), left: pos?.left ?? 0, zIndex: 300, width: 320 }}>
                 <div style={{ background: "#111", border: "1px solid rgba(255,255,255,.15)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
                   {/* Badge */}
                   <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "3px 10px", borderRadius: 20, marginBottom: 10, background: level.badgeColor, border: `1px solid ${level.badgeBorder}`, color: level.badgeText }}>
@@ -841,7 +860,8 @@ function PrivacyLevelSelector({ selected, onSelect }: { selected: string | null;
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Resell option for fitnight */}
